@@ -50,9 +50,11 @@ ui_errors ui_system_configure(void);
 *	@retval	UI_ERR_FAN_DRIVER		If an error with the PWM occurs
 *
 *	@post 	If an error with the BME280, the SSD1306 display, the EEPROM or the PWM occurs the correct execution is not guaranteed
-*	@post 	On success the new temperature is measured and printed on the display
-*	@post 	On success the new target speed is calculated from the fan curve and printed on display
-*	@post 	On success the PWM duty-cycle is updated to match the new target speed
+*	@post 	On success the PWM duty-cycle is set to 50% for FAN_DRIVER_BOOT_DELAY_MS to overcome inertia before using the tachometer hardware timeout
+*	@post 	On success the sensor performs temperature live readings and the display shows them
+*	@post 	On success the real-time target speed is calculated from the fan curve
+*	@post 	On success the PWM duty-cycle is updated every FAN_DRIVER_UPDATE_TIME_MS to approximately match the fan speed to the new target speed
+*	@post 	On success the display shows the real-time measured speed
 *
 */
 ui_errors ui_system_update(void);

@@ -15,6 +15,11 @@
 #define CONFIG_H
 
 /**TWI*/
+/*
+*
+*		Bitrate and prescaler values for 100 kHz for the ATmega328P/Arduino UNO R3 (see the frequency formula in twi.h)
+*
+*/
 #define TWI_BITRATE_REG 72
 #define TWI_BITRATE_PRESCALER 0
 #define TWI_TIMEOUT_MS 400
@@ -69,12 +74,61 @@
 #define ERR_DIGITS_COLUMN ERR_WORD_COLUMN + 5
 
 /**BME280*/
-//The manufacturer provides maximum range from -40°C to 85°C and ideal range from 0°C to 65°C
-//Value format: 12.3... = 123
+/*
+*
+*		The manufacturer provides the maximum range [-40, 85]°C and the ideal range [0, 65]°C
+*
+*		-The value format here is tenth of Celsius degrees multiplied by 10: 12.3°C = 123°C
+*
+*/
 #define BME280_MIN_TEMP_C_X10 0
 #define BME280_MAX_TEMP_C_X10 650
 
 /**FAN_DRIVER*/
+/*
+*
+*		Minimum duty-cycle register step
+*
+*		-Increase MIN_DC_REG_STEP to increase the speed variation during the feedback adjustment, which will finish faster but will be less smooth
+*
+*		-Decrease MIN_DC_REG_STEP to improve the responsiveness and the approximation of the target speed during the feedback adjustment, which will be slower
+*
+*		-The valid range is [1, 10]
+*
+*/
+#define MIN_DC_REG_STEP 1
+/*
+*
+*		Hysteresis correction factor to account for rounded decimals and non-liner speed
+*
+*		-The valid range is [15, 50]
+*
+*/
+#define HYST_CORR_FACT_X1000 15
+/*
+*
+*		Minimum duty-cycle register value to spin the fan tested with a 9 V DC supply
+*
+*		-The valid range is [0, 40] (half range: the reg top value is 79)
+*
+*/
+#define MIN_DC_REG_VALUE 2
+/*
+*	
+*	  	Approximate MIN-MAX fan speed values for a 9 V DC supply calculated from the tachometer
+*	  	pulses measured using the input capture feature
+*
+*	 	-Tested duty-cycle range is [3.75%, 100%] (2 to 79 duty_cycle reg)
+*
+*		-The valid range must be bigger than 80
+*
+*		-Keep this range smaller than the real measured one to guarantee the reaching of the target speed
+*
+*/
+#define FAN_DRIVER_MAX_SPEED_RPM 2000
+#define FAN_DRIVER_MIN_SPEED_RPM 350
+
+#define FAN_DRIVER_BOOT_DELAY_MS 1000
 #define FAN_DRIVER_TIMEOUT_MS 400
 #define FAN_DRIVER_UPDATE_TIME_MS 80
 

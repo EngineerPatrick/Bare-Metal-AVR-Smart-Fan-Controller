@@ -514,7 +514,8 @@ ui_errors ui_system_update(void) {
 	fan_curve_errors fan_curve_error_code = 0;
 	fan_driver_errors fan_driver_error_code = 0;
 	int16_t temp_c_x10 = 0;
-	uint16_t speed_rpm = 0;
+	uint16_t target_speed_rpm = 0;
+	uint16_t measured_speed_rpm = 0;
 	uint16_t t_zero_ms = 0;
 	
 	display_error_code = display_units_write();
@@ -530,6 +531,7 @@ ui_errors ui_system_update(void) {
 	}
 	
 	fan_driver_boot();
+	scheduler_timer_delay(FAN_DRIVER_BOOT_DELAY_MS);
 	t_zero_ms = scheduler_timer_get_timestamp();
 	
 	while(1) {
@@ -540,7 +542,7 @@ ui_errors ui_system_update(void) {
 			return UI_ERR_BME;
 		}
 				
-		fan_curve_error_code = fan_curve_get_speed((uint16_t) temp_c_x10, &speed_rpm);
+		fan_curve_error_code = fan_curve_get_speed((uint16_t) temp_c_x10, &target_speed_rpm);
 	
 		if (fan_curve_error_code != FAN_CURVE_ERR_OK) {
 			fan_driver_stop();
@@ -548,7 +550,7 @@ ui_errors ui_system_update(void) {
 		}
 		
 		if (scheduler_timer_poll(&t_zero_ms, FAN_DRIVER_UPDATE_TIME_MS)) {
-			fan_driver_error_code = fan_driver_update(speed_rpm);
+			fan_driver_error_code = fan_driver_update(target_speed_rpm, &measured_speed_rpm);
 			
 			if (fan_driver_error_code != FAN_DRIVER_ERR_OK) {
 				fan_driver_stop();
@@ -565,7 +567,7 @@ ui_errors ui_system_update(void) {
 			return UI_ERR_DISPLAY;
 		}
 		
-		display_error_code = display_speed_write(speed_rpm);
+		display_error_code = display_speed_write(measured_speed_rpm);
 	
 		if (display_error_code != DISPLAY_ERR_OK) {
 			fan_driver_stop();
