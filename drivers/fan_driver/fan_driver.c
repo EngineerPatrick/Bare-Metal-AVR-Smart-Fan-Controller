@@ -8,7 +8,7 @@
 *	fan tachometer interrupt-based measurement.
 *
 *	Integrates the util/atomic library of avr-libc to
-*	read interrupt-sensible variables atomically.
+*	read ISR shared volatile variables atomically.
 *
 */
 
@@ -16,14 +16,14 @@
 *
 *	For the Arctic P12 MAX the tachometer sends 2 pulses per revolution:
 *
-*	MIN - MAX SPEED = 400RPM - 3300RPM
+*	MIN - MAX SPEED = 400 RPM - 3300 RPM
 *
-*	3299RPM - 3300RPM pulses/s = 109.97Hz - 110Hz
+*	3299 RPM - 3300 RPM pulses/s = 109.97 Hz - 110 Hz
 *
-*	3299RPM - 3300RPM time between pulses = 9.093665ms - 9.090909ms
+*	3299 RPM - 3300 RPM time between pulses = 9.093665 ms - 9.090909 ms
 *	
 *	*Required resolution*
-*	Smallest change of time between pulses = 2.756us
+*	Smallest change of time between pulses = 2.756 us
 *
 */
 
@@ -37,10 +37,10 @@
 *
 *	prescaler register value -> prescaler value: 1 -> 1, 2 -> 8, 3 -> 32, 4 -> 64, 5 -> 128, 6 -> 256, 7 -> 1024
 *
-*	For the Arduino UNO R3 the default CPU Clock Frequency = 16MHz
+*	For the Arduino UNO R3 the default CPU Clock Frequency = 16 MHz
 *
 *	*Frequency*
-*	prescaler value = 8, top value = 79 -> 25kHz
+*	prescaler value = 8, top value = 79 -> 25 kHz
 *
 */
 
@@ -52,10 +52,10 @@
 *
 *	prescaler register value -> prescaler values: 1 -> 1, 2 -> 8, 3 -> 64, 4 -> 256, 5 -> 1024
 *
-*	For the Arduino UNO R3 the default CPU Clock Frequency = 16MHz
+*	For the Arduino UNO R3 the default CPU Clock Frequency = 16 MHz
 *
 *	*Timer resolution*
-*	prescaler value = 8 -> MIN time between ticks 500ns
+*	prescaler value = 8 -> MIN time between ticks 500 ns
 *
 */
 
@@ -83,15 +83,9 @@
 #define TIM2_TOPVALUE 79
 
 #define TIM2_DUTY_CYCLE_REG OCR2B
-#define MIN_DC_REG_VALUE 2
-/*
-*
-*		-Increase MIN_DC_REG_STEP to make the PWM adjust faster to the target speed.
-*
-*		-Decrease MIN_DC_REG_STEP to make the PWM more precise and responsive to changes of the target speed.
-*
-*/
-#define MIN_DC_REG_STEP 1
+#define TOP_DC_REG_VALUE TIM2_TOPVALUE
+#define HALF_DC_REG_VALUE 40
+#define DC_REG_VALUE_RANGE (TOP_DC_REG_VALUE - MIN_DC_REG_VALUE)
 
 #define TIM1_COUNT_REG TCNT1
 
@@ -112,58 +106,68 @@
 #define TICK_PERIOD_NS 500
 #define TIM1_MAX_OVERFLOWS 65536
 
+#define FAN_DRIVER_SPEED_RANGE (FAN_DRIVER_MAX_SPEED_RPM - FAN_DRIVER_MIN_SPEED_RPM)
+
 typedef struct {
-	uint32_t tach_us;
-	uint32_t interval_ticks;
-	uint32_t interval_overflows;
-	uint16_t prev_ticks;
-	uint16_t prev_overflows;
-	uint16_t overflow_count;
 	uint16_t measured_speed_rpm;
 	uint16_t target_speed_rpm;
-	uint16_t min_pwm_step_rpm;
+	uint16_t hysteresis_rpm;
+	uint8_t prev_dc_reg_value;
 	uint8_t init_flag;
-} pwm_params;
+} fan_controller;
 
-static volatile pwm_params pwm = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+typedef struct {
+	uint32_t interval_us;
+	uint32_t interval_ticks;
+	uint32_t interval_overflows;
+	uint16_t prev_interval_ticks;
+	uint16_t prev_interval_overflows;
+	uint16_t overflow_count;
+	uint8_t response_received;
+} tach_reading;
+
+static fan_controller fan = {0};
+
+static volatile tach_reading tach = {0};
 
 ISR(TIMER1_CAPT_vect) {
-	uint16_t local_ovf_count = pwm.overflow_count;
+	uint16_t local_ovf_count = tach.overflow_count;
+	tach.response_received = 1;
 
 	/* 
 	*
-	*	-In the ATmega328P the TIM1 CAPT interrupt has higher priority then the TIM1 OVF, therefore in the case they both happen
-	*	at the same time the overflow count needs to be updated in this ISR
+	*		In the ATmega328P the TIM1 CAPT interrupt has higher priority then the TIM1 OVF, therefore in the case they both happen
+	*		at the same time the overflow count needs to be updated in this ISR
 	*
 	*/
 	if ((TIM1_INT_FLAG_REG & TIM1_OVERFLOW_FLAG) && TIM1_INPUT_CAPTR_REG < TIM1_RANGE_TICKS / 2) {
         local_ovf_count++;
     }
 	
-	if (local_ovf_count != pwm.prev_overflows) {
-		pwm.interval_ticks = (uint32_t) TIM1_RANGE_TICKS - pwm.prev_ticks + TIM1_INPUT_CAPTR_REG;
+	if (local_ovf_count != tach.prev_interval_overflows) {
+		tach.interval_ticks = (uint32_t) TIM1_RANGE_TICKS - tach.prev_interval_ticks + TIM1_INPUT_CAPTR_REG;
 
-		if (local_ovf_count > pwm.prev_overflows) {
-			pwm.interval_overflows = local_ovf_count - 1 - pwm.prev_overflows;
+		if (local_ovf_count > tach.prev_interval_overflows) {
+			tach.interval_overflows = local_ovf_count - tach.prev_interval_overflows - 1;
 		}
 
 		else {
-			pwm.interval_overflows = (uint32_t) TIM1_MAX_OVERFLOWS - pwm.prev_overflows + local_ovf_count - 1;
+			tach.interval_overflows = (uint32_t) TIM1_MAX_OVERFLOWS - tach.prev_interval_overflows + local_ovf_count - 1;
 		}
 	}
 
 	else {
-		pwm.interval_ticks = (uint32_t) TIM1_INPUT_CAPTR_REG - pwm.prev_ticks;
-		pwm.interval_overflows = 0;
+		tach.interval_ticks = (uint32_t) TIM1_INPUT_CAPTR_REG - tach.prev_interval_ticks;
+		tach.interval_overflows = 0;
 	}
 	
-	pwm.tach_us = ((pwm.interval_ticks + ((uint32_t) pwm.interval_overflows * TIM1_RANGE_TICKS)) * TICK_PERIOD_NS) / 1000;
-	pwm.prev_ticks = TIM1_INPUT_CAPTR_REG;
-	pwm.prev_overflows = local_ovf_count;
+	tach.interval_us = ((tach.interval_ticks + ((uint32_t) tach.interval_overflows * TIM1_RANGE_TICKS)) * TICK_PERIOD_NS) / 1000;
+	tach.prev_interval_ticks = TIM1_INPUT_CAPTR_REG;
+	tach.prev_interval_overflows = local_ovf_count;
 }
 
 ISR(TIMER1_OVF_vect) {
-	pwm.overflow_count++;
+	tach.overflow_count++;
 }
 
 static inline void fan_driver_pins_init(void) {
@@ -176,7 +180,7 @@ static inline void fan_driver_tim2_fastpwm_init(void) {
 	TIM2_CTRL_REG_A = TIM2_CLEAR_PIN_ON_COMP | TIM2_FAST_PWM_A;
 	TIM2_CTRL_REG_B = TIM2_FAST_PWM_B;
 	TIM2_TOP_REG = TIM2_TOPVALUE;
-	TIM2_DUTY_CYCLE_REG = MIN_DC_REG_VALUE;
+	TIM2_DUTY_CYCLE_REG = HALF_DC_REG_VALUE;
 }
 
 static inline void fan_driver_tim2_prsc_init(void) {
@@ -188,7 +192,7 @@ static inline void fan_driver_tim2_stop(void) {
 	TIM2_CTRL_REG_A = 0;
 }
 
-static inline void fan_driver_tim1_incaptr_init(void) {
+static inline void fan_driver_tim1_inp_captr_init(void) {
 	TIM1_CTRL_REG_B = TIM1_RISING_EDGE_TRIGG;
 	TIM1_INT_MASK_REG = TIM1_INPUT_CAPTR_INT | TIM1_OVERFLOW_INT;
 }
@@ -211,30 +215,28 @@ void fan_driver_boot(void) {
 	
 	/*
 	*
-	*		-To prevent continuous target speed update in fan_driver_update, and to prevent continuous speed oscillations in fan_driver_tach.
+	*		Speed hysteresis to prevent continuous target speed update in fan_driver_update
 	*			
-	*		-If TIM2_DUTY_CYCLE_REG changes by MIN_DC_REG_STEP the speed would change of (FAN_DRIVER_MAX_SPEED_RPM - FAN_DRIVER_MIN_SPEED_RPM) * (MIN_DC_REG_STEP / (TIM2_TOP_REG + 1)),
-	*		1500 is used instead of 1000 to account for discarded decimals.
+	*		-If TIM2_DUTY_CYCLE_REG changes by MIN_DC_REG_STEP the speed changes of MIN_DC_REG_STEP *(FAN_DRIVER_SPEED_RANGE / DC_REG_VALUE_RANGE)
+	*
+	*		-HYST_CORR_FACT_X1000 is used  to account for discarded decimals and non-linear speed
 	*
 	*/
-	pwm.min_pwm_step_rpm = (uint16_t) (((uint32_t) (FAN_DRIVER_MAX_SPEED_RPM - FAN_DRIVER_MIN_SPEED_RPM) * MIN_DC_REG_STEP * 1500 / (TIM2_TOP_REG + 1)) / 1000);
+	fan.hysteresis_rpm = (uint16_t) ((((uint32_t) MIN_DC_REG_STEP * FAN_DRIVER_SPEED_RANGE * HYST_CORR_FACT_X1000 * 1000) / DC_REG_VALUE_RANGE) / 1000);
 	
-	fan_driver_tim1_incaptr_init();
+	fan_driver_tim1_inp_captr_init();
 	TIM1_COUNT_REG = 0;
 	fan_driver_tim1_prsc_init();
-	pwm.init_flag = 1;
+	fan.init_flag = 1;
 	sei();
 }
 
 static fan_driver_errors fan_driver_tach(void) {
-	uint32_t tach_us = 0;
-	uint32_t prev_tach_us = 0;
-	uint8_t response_received = 0;
+	uint32_t interval_us = 0;
 	uint16_t t_zero_ms = 0;
-	uint16_t speed_deviation_rpm = 0;
 	
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		prev_tach_us = pwm.tach_us;
+		tach.response_received = 0;
 	}
 	
 	t_zero_ms = scheduler_timer_get_timestamp();
@@ -242,37 +244,42 @@ static fan_driver_errors fan_driver_tach(void) {
 	while (!scheduler_timer_poll(&t_zero_ms, FAN_DRIVER_TIMEOUT_MS)) {
 			
 		ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-			tach_us = pwm.tach_us;
-		}
-			
-		if (tach_us != prev_tach_us) {
-			response_received = 1;
-			break;
+		
+			if (tach.response_received) {
+				break;
+			}
 		}
 	}
 	
-	if (!response_received) {
-		return FAN_DRIVER_ERR_TACH;
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		
+		if (!tach.response_received) {
+			return FAN_DRIVER_ERR_TACH;
+		}
+		
+		else {
+			interval_us = tach.interval_us;
+		}
 	}
 	
-	pwm.measured_speed_rpm = (uint16_t) (((uint32_t) 1000000 * 60) / (tach_us * TACH_PULSES_PER_REV));
+	fan.measured_speed_rpm = (uint16_t) (((uint32_t) 1000000 * 60) / (interval_us * TACH_PULSES_PER_REV));
 
-	if (pwm.measured_speed_rpm == pwm.target_speed_rpm) {
+	if (fan.measured_speed_rpm == fan.target_speed_rpm) {
 		return FAN_DRIVER_ERR_OK;
 	}
 
-	else if (pwm.measured_speed_rpm < pwm.target_speed_rpm) {
-		speed_deviation_rpm = pwm.target_speed_rpm - pwm.measured_speed_rpm;
+	else if (fan.measured_speed_rpm < fan.target_speed_rpm - fan.hysteresis_rpm) {
 
-		if (speed_deviation_rpm >= pwm.min_pwm_step_rpm && (TIM2_DUTY_CYCLE_REG + MIN_DC_REG_STEP <= TIM2_TOP_REG)) {
+		if ((TIM2_DUTY_CYCLE_REG + MIN_DC_REG_STEP <= TOP_DC_REG_VALUE) && (TIM2_DUTY_CYCLE_REG + MIN_DC_REG_STEP != fan.prev_dc_reg_value)) {
+			fan.prev_dc_reg_value = TIM2_DUTY_CYCLE_REG;
 			TIM2_DUTY_CYCLE_REG += MIN_DC_REG_STEP;
 		}
 	}
 	
-	else {
-		speed_deviation_rpm = pwm.measured_speed_rpm - pwm.target_speed_rpm;
+	else if (fan.measured_speed_rpm > fan.target_speed_rpm + fan.hysteresis_rpm) {
 
-		if (speed_deviation_rpm >= pwm.min_pwm_step_rpm && (TIM2_DUTY_CYCLE_REG >= MIN_DC_REG_VALUE + MIN_DC_REG_STEP)) {
+		if ((TIM2_DUTY_CYCLE_REG - MIN_DC_REG_VALUE >= MIN_DC_REG_STEP) && (TIM2_DUTY_CYCLE_REG - MIN_DC_REG_STEP != fan.prev_dc_reg_value)) {
+			fan.prev_dc_reg_value = TIM2_DUTY_CYCLE_REG;
 			TIM2_DUTY_CYCLE_REG -= MIN_DC_REG_STEP;
 		}
 	}
@@ -280,53 +287,60 @@ static fan_driver_errors fan_driver_tach(void) {
 	return FAN_DRIVER_ERR_OK;
 }
 
-fan_driver_errors fan_driver_update(uint16_t target_speed_rpm) {
+fan_driver_errors fan_driver_update(uint16_t target_speed_rpm, uint16_t* measured_speed_rpm) {
 	fan_driver_errors error_code = FAN_DRIVER_ERR_OK;
 	uint16_t speed_variation_rpm = 0;
+
+	if (FAN_DRIVER_SPEED_RANGE < 80 || MIN_DC_REG_STEP < 1 || MIN_DC_REG_STEP > 10 || MIN_DC_REG_VALUE < 0 || MIN_DC_REG_VALUE > 40 || HYST_CORR_FACT_X1000 < 15 || HYST_CORR_FACT_X1000 > 50) {
+		return FAN_DRIVER_ERR_CONFIG;
+	}
 	
-	if (!pwm.init_flag) {
+	if (!fan.init_flag) {
 		fan_driver_boot();
 	}
 
-	if (pwm.target_speed_rpm != target_speed_rpm) {
+	if (fan.target_speed_rpm != target_speed_rpm) {
 		
-		if (target_speed_rpm > pwm.target_speed_rpm) {
-			speed_variation_rpm = target_speed_rpm - pwm.target_speed_rpm;
+		if (target_speed_rpm > fan.target_speed_rpm) {
+			speed_variation_rpm = target_speed_rpm - fan.target_speed_rpm;
 			
-			if (speed_variation_rpm >= pwm.min_pwm_step_rpm) {
-				pwm.target_speed_rpm = (target_speed_rpm >= FAN_DRIVER_MAX_SPEED_RPM) ? FAN_DRIVER_MAX_SPEED_RPM : target_speed_rpm;
+			if (speed_variation_rpm >= fan.hysteresis_rpm) {
+				fan.target_speed_rpm = (target_speed_rpm >= FAN_DRIVER_MAX_SPEED_RPM) ? FAN_DRIVER_MAX_SPEED_RPM : target_speed_rpm;
+				TIM2_DUTY_CYCLE_REG = (uint8_t) (((((uint32_t) (fan.target_speed_rpm - FAN_DRIVER_MIN_SPEED_RPM) * DC_REG_VALUE_RANGE * 1000) / FAN_DRIVER_SPEED_RANGE) / 1000) + MIN_DC_REG_VALUE);
 			}
 		}		
 
 		else {
-			speed_variation_rpm = pwm.target_speed_rpm - target_speed_rpm;
+			speed_variation_rpm = fan.target_speed_rpm - target_speed_rpm;
 
-			if (speed_variation_rpm >= pwm.min_pwm_step_rpm) {
-				pwm.target_speed_rpm = (target_speed_rpm <= FAN_DRIVER_MIN_SPEED_RPM) ? FAN_DRIVER_MIN_SPEED_RPM : target_speed_rpm;
+			if (speed_variation_rpm >= fan.hysteresis_rpm) {
+				fan.target_speed_rpm = (target_speed_rpm <= FAN_DRIVER_MIN_SPEED_RPM) ? FAN_DRIVER_MIN_SPEED_RPM : target_speed_rpm;
+				TIM2_DUTY_CYCLE_REG = (uint8_t) (((((uint32_t) (fan.target_speed_rpm - FAN_DRIVER_MIN_SPEED_RPM) * DC_REG_VALUE_RANGE * 1000) / FAN_DRIVER_SPEED_RANGE) / 1000) + MIN_DC_REG_VALUE);
 			}
 		}
-		
-		TIM2_DUTY_CYCLE_REG = (uint8_t) (((uint32_t) TIM2_TOP_REG * pwm.target_speed_rpm * 1000) / ((uint32_t) FAN_DRIVER_MAX_SPEED_RPM * 1000));
 	}
 	
 	else {
 		error_code = fan_driver_tach();
 	}
 	
+	*measured_speed_rpm = fan.measured_speed_rpm;
 	return error_code;
 }
 
 void fan_driver_stop(void) {	
 	fan_driver_tim1_stop();
 	fan_driver_tim2_stop();
-	pwm.tach_us = 0;
-	pwm.interval_ticks = 0;
-	pwm.interval_overflows = 0;
-	pwm.prev_ticks = 0;
-	pwm.prev_overflows = 0;
-	pwm.overflow_count = 0;
-	pwm.measured_speed_rpm = 0;
-	pwm.target_speed_rpm = 0;
-	pwm.min_pwm_step_rpm = 0;
-	pwm.init_flag = 0;
+	tach.interval_us = 0;
+	tach.interval_ticks = 0;
+	tach.interval_overflows = 0;
+	tach.prev_interval_ticks = 0;
+	tach.prev_interval_overflows = 0;
+	tach.overflow_count = 0;
+	tach.response_received = 0;
+	fan.measured_speed_rpm = 0;
+	fan.target_speed_rpm = 0;
+	fan.hysteresis_rpm = 0;
+	fan.prev_dc_reg_value = 0;
+	fan.init_flag = 0;
 }
