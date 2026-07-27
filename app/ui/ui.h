@@ -30,7 +30,7 @@ typedef enum {
 *	@brief	Starts the UI to create a new fan curve.
 *
 *	@retval	UI_ERR_OK				If no error occurs
-*	@retval	UI_ERR_FAN_CURVE		If the curve is not correctly saved in the EEPROM
+*	@retval	UI_ERR_FAN_CURVE 		If the curve is not correctly saved in the EEPROM
 *	@retval	UI_ERR_DISPLAY			If an error with the SSD1306 display occurs
 *
 *	@post 	If an error with the EEPROM or the SSD1306 display occurs the correct execution is not guaranteed
@@ -46,7 +46,7 @@ ui_errors ui_system_configure(void);
 *	@retval	UI_ERR_OK				If no error occurs
 *	@retval	UI_ERR_BME				If an error with the BME280 sensor occurs
 *	@retval	UI_ERR_DISPLAY			If an error with the SSD1306 display occurs
-*	@retval	UI_ERR_FAN_CURVE		If the curve is not correctly saved in EEPROM
+*	@retval	UI_ERR_FAN_CURVE 		If the curve is not correctly saved in EEPROM
 *	@retval	UI_ERR_FAN_DRIVER		If an error with the PWM occurs
 *
 *	@post 	If an error with the BME280, the SSD1306 display, the EEPROM or the PWM occurs the correct execution is not guaranteed

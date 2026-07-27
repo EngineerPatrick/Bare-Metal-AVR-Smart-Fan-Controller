@@ -4,10 +4,10 @@
 *
 *   @brief Implementation for the ui module.
 *
-*   @details Contains UI logic for the configuration and
-*	the continuous update of the system.
+*   @details Contains UI logic for the configuration of the system
+*	and the runtime loop.
 *
-*	Handles 3 buttons and a rotary encoder for the input and
+*	Handles 3 buttons and 1 rotary encoder for the input and
 *	a display for the output.
 *
 */
@@ -23,7 +23,7 @@
 #include "pin_map.h"
 #include "board.h"
 
-#define STD_FAN_CURVE_MAX_SIZE UI_STD_CURVE_SIZE
+#define STD_FAN_CURVE_MAX_SIZE 10
 #define ADV_FAN_CURVE_MAX_SIZE 10
 
 #define TEMP_MIN_RATE 1
@@ -93,8 +93,8 @@ static inline void ui_rotary_enc_handler(uint16_t* value, uint16_t rate, uint16_
 static ui_errors ui_system_configure_std(void) {
 	display_errors display_error_code = 0;
 	fan_curve_errors fan_curve_error_code = 0;
-	uint16_t node_temp[STD_FAN_CURVE_MAX_SIZE] = {UI_STD_TEMP_1, UI_STD_TEMP_2, UI_STD_TEMP_3, UI_STD_TEMP_4, UI_STD_TEMP_5, UI_STD_TEMP_6, UI_STD_TEMP_7, UI_STD_TEMP_8};
-	uint16_t node_speed[STD_FAN_CURVE_MAX_SIZE] = {FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM};
+	uint16_t node_temp[STD_FAN_CURVE_MAX_SIZE] = {UI_STD_TEMP_1, UI_STD_TEMP_2, UI_STD_TEMP_3, UI_STD_TEMP_4, UI_STD_TEMP_5, UI_STD_TEMP_6, UI_STD_TEMP_7, UI_STD_TEMP_8, UI_STD_TEMP_9, UI_STD_TEMP_10};
+	uint16_t node_speed[STD_FAN_CURVE_MAX_SIZE] = {FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM};
 	uint8_t i = 0;
 	uint8_t prev_re_value = 0;
 	uint16_t prev_speed_rpm = FAN_DRIVER_MIN_SPEED_RPM;
@@ -172,7 +172,7 @@ static ui_errors ui_system_configure_std(void) {
 			if (ui_select_state()) {
 				scheduler_timer_delay(BUTTONS_DEBOUNCE_TIME_MS);
 				
-				if (i < (STD_FAN_CURVE_MAX_SIZE - 1)) {
+				if (i < (UI_STD_CURVE_SIZE - 1)) {
 					i++;
 					break;
 				}
@@ -186,11 +186,11 @@ static ui_errors ui_system_configure_std(void) {
 		}
 	}
 	
-	for (i = 0; i < (STD_FAN_CURVE_MAX_SIZE - 1); i++) {
-		node_speed[i + 1] = ((node_speed[i] > FAN_DRIVER_MIN_SPEED_RPM) && (node_speed[i + 1] == FAN_DRIVER_MIN_SPEED_RPM)) ? node_speed[i] : node_speed[i + 1];
+	for (i = 0; i < (UI_STD_CURVE_SIZE - 1); i++) {
+		node_speed[i + 1] = (node_speed[i] > node_speed[i + 1]) ? node_speed[i] : node_speed[i + 1];
 	}
 	
-	fan_curve_error_code = fan_curve_create(STD_FAN_CURVE_MAX_SIZE, node_temp, node_speed);
+	fan_curve_error_code = fan_curve_create(UI_STD_CURVE_SIZE, node_temp, node_speed);
 	
 	if (fan_curve_error_code != FAN_CURVE_ERR_OK) {
 		return UI_ERR_FAN_CURVE;
@@ -364,8 +364,8 @@ static ui_errors ui_system_configure_adv(void) {
 	}
 	
 	for (i = 0; i < (ADV_FAN_CURVE_MAX_SIZE - 1); i++) {
-		node_temp[i + 1] = ((node_temp[i] > BME280_MIN_TEMP_C_X10) && (node_temp[i + 1] == BME280_MIN_TEMP_C_X10)) ? node_temp[i] : node_temp[i + 1];
-		node_speed[i + 1] = ((node_speed[i] > FAN_DRIVER_MIN_SPEED_RPM) && (node_speed[i + 1] == FAN_DRIVER_MIN_SPEED_RPM)) ? node_speed[i] : node_speed[i + 1];
+		node_temp[i + 1] = (node_temp[i] > node_temp[i + 1]) ? node_temp[i] : node_temp[i + 1];
+		node_speed[i + 1] = (node_speed[i] > node_speed[i + 1]) ? node_speed[i] : node_speed[i + 1];
 	}
 		
 	fan_curve_error_code = fan_curve_create(ADV_FAN_CURVE_MAX_SIZE, node_temp, node_speed);
