@@ -18,9 +18,9 @@
 
 /**
 *
-*	@brief	Configures and starts 8-bit timer 0 to 1ms.
+*	@brief	Configures and starts 8-bit timer 0 to 1 ms.
 *
-*	@post 	If 8-bit timer 0 has never been configured it is configured to 1ms
+*	@post 	If 8-bit timer 0 has never been configured it is configured to 1 ms
 *	@post 	The timer is started
 *	@post 	If the timer was already running it is left unchanged
 *
@@ -41,7 +41,7 @@ void scheduler_timer_stop(void);
 *
 *	@brief	Returns the timestamp of the current timer value.
 *
-*	@retval	0					    If scheduler_timer_start has never been called
+*	@retval	0						If scheduler_timer_start has never been called
 *
 *	@post 	The current timer value is returned
 *
@@ -59,7 +59,7 @@ uint16_t scheduler_timer_get_timestamp(void);
 *	@retval	0					    If scheduler_timer_start has never been called
 *	@retval	1					    If the timer has reached the target duration
 *
-*	@pre    This function is being polled at a frequency f > 0.016Hz
+*	@pre    This function is being polled at a frequency f > 16 mHz
 *	@post 	If the timer has reached the target duration *t_zero_ms is updated to the current timestamp
 *
 */
