@@ -22,10 +22,10 @@
 *
 *	prescaler register value -> prescaler value: 1 -> 1, 2 -> 8, 3 -> 64, 4 -> 256, 5 -> 1024
 *
-*	For the Arduino UNO R3 the default CPU Clock Frequency = 16MHz
+*	For the Arduino UNO R3 the default CPU Clock Frequency = 16 MHz
 *
 *	*Period*
-*	prescaler value = 64, top value = 249 -> 1ms
+*	prescaler value = 64, top value = 249 -> 1 ms
 *
 */
 
@@ -48,6 +48,9 @@
 #define TIM0_INT_MASK_REG TIMSK0
 #define TIM0_OUT_COMP_INT (1 << OCIE0A)
 
+#define TIM0_INT_FLAG_REG TIFR0
+#define TIM0_OUT_COMP_FLAG (1 << OCF0A)
+
 #define TIM0_TOP_REG OCR0A
 #define TIM0_TOPVALUE 249
 
@@ -58,13 +61,10 @@ typedef struct {
 	uint8_t init_flag;
 } timer_params;
 
-static volatile timer_params timer = {0, 0};
+static volatile timer_params timer = {0};
 
 ISR(TIMER0_COMPA_vect) {
-	
-	if (TIM0_CTRL_REG_B) {
-		timer.current_ms++;
-	}
+	timer.current_ms++;
 }
 
 static inline void scheduler_tim0_ctc_init(void) {
@@ -78,9 +78,10 @@ static inline void scheduler_tim0_prsc_init(void) {
 }
 
 static inline void scheduler_tim0_stop(void) {
+	TIM0_INT_MASK_REG = 0;
+	TIM0_INT_FLAG_REG = TIM0_OUT_COMP_FLAG;
 	TIM0_CTRL_REG_B = 0;
 	TIM0_CTRL_REG_A = 0;
-	TIM0_INT_MASK_REG = 0;
 	TIM0_COUNT_REG = 0;
 }
 
@@ -101,12 +102,8 @@ void scheduler_timer_start(void) {
 }
 
 void scheduler_timer_stop(void) {
-	
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		scheduler_tim0_stop();
-		timer.current_ms = 0;
-	}
-	
+	scheduler_tim0_stop();
+	timer.current_ms = 0;
 	timer.init_flag = 0;
 }
 
