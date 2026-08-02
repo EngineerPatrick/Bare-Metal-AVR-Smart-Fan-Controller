@@ -41,12 +41,9 @@ void fan_driver_boot(void);
 *
 *	@retval	FAN_DRIVER_ERR_OK		If no error occurs
 *	@retval	FAN_DRIVER_ERR_TACH		If there is no tachometer reading for a period of FAN_DRIVER_TIMEOUT_MS
-*	@retval	FAN_DRIVER_ERR_CONFIG	If (FAN_DRIVER_MAX_SPEED_RPM - FAN_DRIVER_MIN_SPEED_RPM) < 80 || !(1 <= MIN_DC_REG_STEP <= 10) || !(0 <= MIN_DC_REG_VALUE <= 40) || !(15 <= HYST_CORR_FACT_X1000 <= 50)
+*	@retval	FAN_DRIVER_ERR_CONFIG	If an error with the parameters in config.h occurs
 *
-*	@pre 	FAN_DRIVER_MAX_SPEED_RPM - FAN_DRIVER_MIN_SPEED_RPM >= 80
-*	@pre 	1 <= MIN_DC_REG_STEP <= 10
-*	@pre 	0 <= MIN_DC_REG_VALUE <= 40
-*	@pre 	15 <= HYST_CORR_FACT_X1000 <= 50
+*	@pre 	All parameters in config.h must be within valid reported ranges
 *	@post 	If passed configuration parameters are invalid the speed is left unchanged
 *	@post 	If fan_driver_boot has never been called it is called
 *	@post 	If the tachometer reading times out the speed is not adjusted with the feedback but is still an estimated value

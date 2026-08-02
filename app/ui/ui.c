@@ -102,6 +102,17 @@ static ui_errors ui_system_configure_std(void) {
 	blink_options option = SPEED_THIRD_DIGIT;
 	uint8_t exit_flag = 0;
 	
+	if (UI_STD_CURVE_SIZE > STD_FAN_CURVE_MAX_SIZE) {
+		return UI_ERR_FAN_CURVE;
+	}
+	
+	for (uint8_t j = 0; j < STD_FAN_CURVE_MAX_SIZE; j++) {
+		
+		if (node_temp[i] > BME280_MAX_TEMP_C_X10 || node_temp[i] < BME280_MIN_TEMP_C_X10) {
+			return UI_ERR_FAN_CURVE;
+		}
+	}
+	
 	while (exit_flag != EXIT) {
 		
 		if (i > 0) {

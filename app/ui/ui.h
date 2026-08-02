@@ -30,9 +30,10 @@ typedef enum {
 *	@brief	Starts the UI to create a new fan curve.
 *
 *	@retval	UI_ERR_OK				If no error occurs
-*	@retval	UI_ERR_FAN_CURVE 		If the curve is not correctly saved in EEPROM
+*	@retval	UI_ERR_FAN_CURVE 		If the curve is not correctly saved in EEPROM or the standard curve fixed values are out of range
 *	@retval	UI_ERR_DISPLAY			If an error with the SSD1306 display occurs
 *
+*	@post 	If the standard curve fixed values are out of range the fan curve saved in EEPROM is left unchanged
 *	@post 	If an error with EEPROM or the SSD1306 display occurs the correct execution is not guaranteed
 *	@post 	On success the new curve is created and saved in EEPROM
 *
