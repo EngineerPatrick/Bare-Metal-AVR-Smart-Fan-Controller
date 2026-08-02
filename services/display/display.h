@@ -50,7 +50,7 @@ typedef enum {
 *	@retval	DISPLAY_ERR_OK			If no error occurs
 *	@retval	DISPLAY_ERR_SSD			If an error with the SSD1306 display occurs
 *
-*   @post   If an error with the SSD1306 display occurs the correct execution is not guaranteed
+*	@post   If an error with the SSD1306 display occurs the correct execution is not guaranteed
 *	@post 	On success the display shows the words "SELECT MODE" at the selected position of a 8x16 grid
 *
 */
@@ -165,7 +165,7 @@ display_errors display_speed_write(uint16_t speed_rpm);
 *	@pre 	error_code <= SYS_ERR_FAN_DRIVER
 *	@post	If passed parameter is invalid the display is left unchanged
 *   @post   If an error with the SSD1306 display occurs the correct execution is not guaranteed
-*	@post 	On success the display shows the error code X as "ERR X" in the selected position of a 8x16 grid
+*	@post 	On success the display shows the error code as "ERR X" in the selected position of a 8x16 grid
 *
 */
 display_errors display_error_write(system_errors error_code);
@@ -175,7 +175,7 @@ display_errors display_error_write(system_errors error_code);
 *	@brief	Configures the blink parameters for the word STANDARD or ADVANCED.
 *
 *	@param	target_duration			Target timer
-*	@param	option					Option to choose which word to blink STANDARD_WORD or ADVANCED_WORD
+*	@param	option					Option to choose which word to blink
 *
 *	@retval	DISPLAY_ERR_OK			If no error occurs
 *	@retval	DISPLAY_ERR_PARAM		If !target_duration || !(STANDARD_WORD <= option <= ADVANCED_WORD)
@@ -219,8 +219,9 @@ display_errors display_digit_blink(uint16_t target_duration, blink_options optio
 *	@retval	DISPLAY_ERR_SSD			If an error with the SSD1306 display occurs
 *
 *   @pre   	display_word_blink or display_digit_blink has been called to configure and start the timer
-*	@pre    This function is being polled at a frequency f > 16 mHz
-*   @post   If display_word_blink or display_digit_blink have never been called the display is left unchanged
+*	@pre    This function is being polled at a frequency higher than 16 mHz
+*	@pre    If this function is being polled at a frequency lower than 16 mHz the correct execution is not guaranteed
+*   @post   If display_word_blink and display_digit_blink have never been called the display is left unchanged
 *   @post   If an error with the SSD1306 display occurs the correct execution is not guaranteed
 *	@post 	On success the selected pixels on the display switch on or off
 *

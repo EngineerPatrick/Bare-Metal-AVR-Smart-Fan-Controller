@@ -4,17 +4,17 @@
 *
 *   @brief Implementation for the scheduler module.
 *
-*   @details Writes the timer registers and handles delay and
+*   @details Configures the timer registers and handles delay and
 *	polling logic.
 *
-*   Integrates the util/atomic library of avr-libc for both
+*   Integrates the util/atomic library of Avr-libC for both
 *	polling of volatile variable and delay creation.
 *
 */
 
 /*
 *
-*	For the ATmega328P using 8-bit timer 0 in CTC mode:
+*	For the ATmega328P using Timer0 in CTC mode:
 *
 *	f = (CPU Clock Frequency) / (prescaler * (1 + top))
 *
@@ -59,9 +59,9 @@
 typedef struct {
 	uint16_t current_ms;
 	uint8_t init_flag;
-} timer_params;
+} scheduler_timer;
 
-static volatile timer_params timer = {0};
+static volatile scheduler_timer timer = {0};
 
 ISR(TIMER0_COMPA_vect) {
 	timer.current_ms++;

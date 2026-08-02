@@ -17,7 +17,8 @@
 /**TWI*/
 /*
 *
-*		Bitrate and prescaler values for 100 kHz for the ATmega328P/Arduino UNO R3 (see the frequency formula in twi.h)
+*		Bitrate and prescaler values for 100 kHz TWI/I2C communication for the
+*		ATmega328P/Arduino UNO R3 (see the frequency formula in twi.h)
 *
 */
 #define TWI_BITRATE_REG 72
@@ -89,9 +90,11 @@
 *
 *		Minimum duty-cycle register step
 *
-*		-Increase MIN_DC_REG_STEP to increase the speed variation during the feedback adjustment, which will finish faster but will be less smooth
+*		-Increase MIN_DC_REG_STEP to increase the speed variation during the feedback adjustment,
+*		which will finish faster but will be less smooth
 *
-*		-Decrease MIN_DC_REG_STEP to improve the responsiveness and the approximation of the target speed during the feedback adjustment, which will be slower
+*		-Decrease MIN_DC_REG_STEP to improve the responsiveness and the approximation of the target speed
+*		during the feedback adjustment, which will be slower
 *
 *		-The valid range is [1, 10]
 *

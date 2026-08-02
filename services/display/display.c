@@ -32,7 +32,11 @@
 #define DISPLAY_MIN_INDEX 1
 #define DISPLAY_MAX_INDEX 10
 
-//Value format: 12.3... = 123
+/*
+*
+*	The value format is in tenth of degrees Celsius : 12.3°C = 123
+*
+*/
 #define DISPLAY_MIN_TEMP_C_X10 0
 #define DISPLAY_MAX_TEMP_C_X10 999
 #define DISPLAY_TEMP_DIGITS 3
@@ -707,9 +711,9 @@ typedef struct {
 	uint8_t state;
 	uint8_t digit;
 	uint8_t init_flag;
-} blink_params;
+} display_blink;
 
-static blink_params blink = {0, 0, 0, 0, 0, 0};
+static display_blink blink = {0, 0, 0, 0, 0, 0};
 
 static display_errors display_word_blink_switch(blink_options option, uint8_t state) {
 	display_errors error_code = 0;

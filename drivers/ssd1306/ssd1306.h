@@ -4,7 +4,7 @@
 *
 *	@brief Public API for the ssd1306 module.
 *
-*	@details Module to print 8x8 pixels characters on the display
+*	@details Module to show 8x8 pixels characters on the display
 *	integrating the 2-wire interface for transmission.
 *
 *	Resets the value of pixels, writes new ones and turns on the display.
@@ -32,7 +32,7 @@ typedef enum {
 *	@retval	SSD_ERR_TWI				If an error with the 2-wire interface occurs
 *
 *   @post   If an error with the 2-wire interface occurs the correct execution is not guaranteed
-*	@post 	On success the value of all pixels is 0
+*	@post 	On success the value of all pixels is changed to 0
 *	@post 	On success the transmission is stopped and the display is left configured
 *
 */
@@ -46,7 +46,7 @@ ssd_errors ssd1306_data_reset(void);
 *	@retval	SSD_ERR_TWI				If an error with the 2-wire interface occurs
 *
 *   @post   If an error with the 2-wire interface occurs the correct execution is not guaranteed
-*	@post 	On success the display turns on and prints all pixels having value set to 1
+*	@post 	On success the display turns on and shows all the pixels with value of 1
 *	@post 	On success the transmission is stopped and the display is left configured
 *
 */
@@ -64,9 +64,10 @@ ssd_errors ssd1306_display_on(void);
 *	@retval	SSD_ERR_PARAM			If char_bytes == NULL || !(1 <= row <= 8) || !(1 <= column <= 16)
 *	@retval	SSD_ERR_TWI				If an error with the 2-wire interface occurs
 *
-*   @pre   	char_bytes points to the first element of an array containing the character in 8 bytes
+*   @pre   	char_bytes points to the first element of an array of size 8 containing the 8-byte character
 *   @pre   	1 <= row <= 8
 *   @pre   	1 <= column <= 16
+*   @post   If the buffer array has a size smaller than 8 the correct execution is not guaranteed
 *   @post   If passed parameters are invalid the transmission is not started
 *   @post   If an error with the 2-wire interface occurs the correct execution is not guaranteed
 *	@post	ssd1306_data_reset is called if it has never been called

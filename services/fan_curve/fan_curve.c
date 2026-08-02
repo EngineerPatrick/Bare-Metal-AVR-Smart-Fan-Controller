@@ -4,7 +4,7 @@
 *
 *   @brief Implementation for the fan_curve module.
 *
-*   @details Contains the EEPROM and data validation logic.
+*   @details Contains EEPROM and data validation logic.
 *
 *	Handles linear interpolation to compute the target speed.
 *
