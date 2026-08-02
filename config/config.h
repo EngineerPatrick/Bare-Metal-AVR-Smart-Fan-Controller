@@ -6,8 +6,11 @@
 *
 *	@details Configuration values for all modules of the system.
 *
-*	If incorrect changes are made the system will return a
-*	specific error code.
+*	If parameters are changed outside the valid ranges a specific error
+*	will be reported by the module using them.
+*
+*	Changing these values to non-unsigned-integer types will result in
+*	undefined behaviors and the correct execution is no longer guaranteed
 *
 */
 
@@ -26,15 +29,24 @@
 #define TWI_TIMEOUT_MS 400
 
 /**UI*/
+/*
+*
+*		Fixed temperature values for the fan curve in the standard option
+*
+*		-The valid range for the curve size is [0, 10]
+*
+*		-The valid range for the temperatures is [BME280_MIN_TEMP_C_X10, BME280_MAX_TEMP_C_X10] (see below)
+*
+*/
 #define UI_STD_CURVE_SIZE 8
 #define UI_STD_TEMP_1 200
-#define UI_STD_TEMP_2 300
-#define UI_STD_TEMP_3 400
-#define UI_STD_TEMP_4 500
-#define UI_STD_TEMP_5 600
-#define UI_STD_TEMP_6 700
-#define UI_STD_TEMP_7 800
-#define UI_STD_TEMP_8 900
+#define UI_STD_TEMP_2 250
+#define UI_STD_TEMP_3 300
+#define UI_STD_TEMP_4 350
+#define UI_STD_TEMP_5 400
+#define UI_STD_TEMP_6 500
+#define UI_STD_TEMP_7 600
+#define UI_STD_TEMP_8 650
 #define UI_STD_TEMP_9 000
 #define UI_STD_TEMP_10 000
 
@@ -42,6 +54,13 @@
 #define BLINK_TIME_MS 400
 
 /**DISPLAY*/
+/*
+*
+*		Position of every word and digit	 on the display
+*
+*		-Every position must be set so that every character enters within an 8x16 grid
+*
+*/
 #define FIRST_ROW 3
 #define FIRST_COLUMN 3
 
@@ -80,6 +99,8 @@
 *		The manufacturer provides the maximum range [-40, 85]°C and the ideal range [0, 65]°C
 *
 *		-The value format here is tenth of Celsius degrees multiplied by 10: 12.3°C = 123°C
+*
+*		-The valid range is [0, 85]°C
 *
 */
 #define BME280_MIN_TEMP_C_X10 0
@@ -134,8 +155,6 @@
 #define FAN_DRIVER_BOOT_DELAY_MS 1000
 #define FAN_DRIVER_TIMEOUT_MS 400
 #define FAN_DRIVER_UPDATE_TIME_MS 80
-
-#define TACH_PULSES_PER_REV 2
 
 /*FAULT_MANAGER*/
 #define BUZZER_DURATION_S 20

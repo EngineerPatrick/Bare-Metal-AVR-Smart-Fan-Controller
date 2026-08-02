@@ -64,11 +64,12 @@ bme_errors bme280_temp_init(void);
 *	@param	temp_c_x10				Pointer to the variable where to save the temperature
 *
 *	@retval	BME_ERR_OK				If no error occurs
-*	@retval	BME_ERR_PARAM			If temp_c_x10 == NULL
+*	@retval	BME_ERR_PARAM			If temp_c_x10 == NULL || BME280_MAX_TEMP_C_X10 > 850
 *	@retval	BME_ERR_TWI				If an error with the 2-wire interface occurs
 *
 *   @pre   	temp_c_x10 != NULL
-*   @post   If passed parameter is invalid the transmission is not started and the variable temp_c_x10 is left unchanged
+*	@pre 	BME280_MAX_TEMP_C_X10 < 850
+*   @post   If passed parameters are invalid the transmission is not started and the variable temp_c_x10 is left unchanged
 *   @post   If an error with the 2-wire interface occurs the correct execution is not guaranteed
 *	@post 	On success the measured value is compensated using the datasheet formulas and clamped within the valid boundaries
 *	@post 	On success the temperature is saved in the variable temp_c_x10
