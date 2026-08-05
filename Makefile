@@ -17,10 +17,11 @@ CONF_DIR 	:= config
 DOCS_DIR 	:= docs
 
 INC_DIRS 	:= $(wildcard $(APP_DIR)/*/) $(wildcard $(DRIV_DIR)/*/) $(wildcard $(SERV_DIR)/*/) $(CONF_DIR) $(BSP_DIR)
-CPPFLAGS 	+= $(addprefix -I,$(INC_DIRS))
-CFLAGS      := -mmcu=$(MCU) -Os -std=c11 -MMD -MP
-LDFLAGS     := -mmcu=$(MCU)
 WARN 		:= -Wall -Wextra -Wpedantic -Wshadow
+CPPFLAGS 	+= $(addprefix -I,$(INC_DIRS))
+CFLAGS		:= -mmcu=$(MCU) -Os -std=c11 -MMD -MP
+CFLAGS		+= $(WARN)
+LDFLAGS		:= -mmcu=$(MCU)
 
 SRCS 		:= $(APP_DIR)/main.c $(wildcard $(APP_DIR)/*/*.c) $(wildcard $(DRIV_DIR)/*/*.c) $(wildcard $(SERV_DIR)/*/*.c)
 OBJS 		:= $(patsubst %.c, $(OBJ_DIR)/%.o, $(SRCS))
@@ -39,7 +40,7 @@ $(OBJ_DIR):
 	
 $(OBJ_DIR)/%.o: %.c | $(OBJ_DIR)
 	mkdir -p $(dir $@)
-	$(CC) $(WARN) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 $(ELF): $(OBJS)
 	$(CC) $(LDFLAGS) $^ -o $@
