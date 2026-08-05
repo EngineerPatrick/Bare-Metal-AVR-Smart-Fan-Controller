@@ -79,8 +79,8 @@ The fan is driven by `fan_driver`, which receives an updated target speed every 
 
 ### Boot Delay
 
-The fan is started at 50% duty cycle for a delay long `FAN_DRIVER_BOOT_DELAY_MS`. This is done to overcome the initial inertia before using the
-tachometer hardware timeout, which may not receive a reading in time during boot.
+The fan is started at 50% duty-cycle for 1 s to overcome the initial inertia before using the tachometer hardware timeout,
+which may not receive a reading in time during boot.
 
 This could be due to a low power supply or a fan with high inertia, and would require the hardware timeout interval to be changed only for this reason.
 

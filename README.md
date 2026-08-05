@@ -1,5 +1,7 @@
 # Bare-Metal AVR Smart Fan Controller
 
+[![CI GitHub](https://github.com/EngineerPatrick/Bare-Metal-AVR-Smart-Fan-Controller/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/EngineerPatrick/Bare-Metal-AVR-Smart-Fan-Controller/actions/workflows/CI.yml)
+
 ## Demo
 
 ![Setup](assets/setup.jpg)
@@ -41,7 +43,7 @@ calculates the target speed using linear interpolation, drives a 4-wire PWM fan 
 ## Build Requirements
 
 - `avr-gcc`
-- `avr-libc` (2.2.0)
+- `avr-libc` (2.2.1)
 - `avr-objcopy`
 - `avr-size`
 - `avrdude`
