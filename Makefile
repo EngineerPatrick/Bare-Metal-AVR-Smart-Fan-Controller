@@ -6,9 +6,11 @@ BAUD        := 115200
 CC   		:= avr-gcc
 OBJCOPY     := avr-objcopy
 SIZE        := avr-size
+CSTD 		:= -std=c11
 
 BLD_DIR		:= build
 OBJ_DIR		:= $(BLD_DIR)/obj
+BIN_DIR		:= $(BLD_DIR)/bin
 APP_DIR		:= app
 DRIV_DIR 	:= drivers
 SERV_DIR 	:= services
@@ -16,11 +18,11 @@ BSP_DIR		:= bsp
 CONF_DIR 	:= config
 DOCS_DIR 	:= docs
 
-INC_DIRS 	:= $(wildcard $(APP_DIR)/*/) $(wildcard $(DRIV_DIR)/*/) $(wildcard $(SERV_DIR)/*/) $(CONF_DIR) $(BSP_DIR)
+INC_DIRS 	:= $(wildcard $(APP_DIR)/*/) $(wildcard $(DRIV_DIR)/*/) $(wildcard $(SERV_DIR)/*/) $(BSP_DIR) $(CONF_DIR)
 WARN 		:= -Wall -Wextra -Wpedantic -Wshadow
-CPPFLAGS 	+= $(addprefix -I,$(INC_DIRS))
-CFLAGS		:= -mmcu=$(MCU) -Os -std=c11 -MMD -MP
-CFLAGS		+= $(WARN)
+CPPFLAGS 	:= $(addprefix -I,$(INC_DIRS))
+CFLAGS		:= -mmcu=$(MCU) -Os -MMD -MP
+CFLAGS		+= $(CSTD) $(WARN)
 LDFLAGS		:= -mmcu=$(MCU)
 
 SRCS 		:= $(APP_DIR)/main.c $(wildcard $(APP_DIR)/*/*.c) $(wildcard $(DRIV_DIR)/*/*.c) $(wildcard $(SERV_DIR)/*/*.c)
@@ -28,21 +30,21 @@ OBJS 		:= $(patsubst %.c, $(OBJ_DIR)/%.o, $(SRCS))
 
 DEPS 		:= $(patsubst $(OBJ_DIR)/%.o, $(OBJ_DIR)/%.d, $(OBJS))
 
-ELF         := $(BLD_DIR)/launcher.elf
-HEX         := $(BLD_DIR)/launcher.hex
+ELF         := $(BIN_DIR)/launcher.elf
+HEX         := $(BIN_DIR)/launcher.hex
 
 .PHONY: all flash clean docs
 
 all: $(HEX)
 
-$(OBJ_DIR):
-	mkdir -p $(OBJ_DIR)
+$(OBJ_DIR) $(BIN_DIR):
+	mkdir -p $@
 	
 $(OBJ_DIR)/%.o: %.c | $(OBJ_DIR)
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
-$(ELF): $(OBJS)
+$(ELF): $(OBJS) | $(BIN_DIR)
 	$(CC) $(LDFLAGS) $^ -o $@
 
 $(HEX): $(ELF)
