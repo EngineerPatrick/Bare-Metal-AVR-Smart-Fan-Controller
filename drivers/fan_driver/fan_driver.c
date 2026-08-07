@@ -293,10 +293,6 @@ static fan_driver_errors fan_driver_tach(void) {
 fan_driver_errors fan_driver_update(uint16_t target_speed_rpm, uint16_t* measured_speed_rpm) {
 	fan_driver_errors error_code = FAN_DRIVER_ERR_OK;
 	uint16_t speed_variation_rpm = 0;
-
-	if (FAN_DRIVER_MAX_SPEED_RPM < FAN_DRIVER_MIN_SPEED_RPM || FAN_DRIVER_SPEED_RANGE < 80 || MIN_DC_REG_STEP < 1 || MIN_DC_REG_STEP > 10 || MIN_DC_REG_VALUE < 0 || MIN_DC_REG_VALUE > 40 || HYST_CORR_FACT_X1000 < 15 || HYST_CORR_FACT_X1000 > 50) {
-		return FAN_DRIVER_ERR_CONFIG;
-	}
 	
 	if (!fan.init_flag) {
 		fan_driver_boot();

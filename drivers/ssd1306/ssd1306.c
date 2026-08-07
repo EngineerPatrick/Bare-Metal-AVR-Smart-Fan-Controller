@@ -95,7 +95,7 @@ ssd_errors ssd1306_8x8char_write(const uint8_t* char_bytes, uint8_t row, uint8_t
 	uint8_t commands[CONFIG_LENGTH - 4];
 	uint8_t data[9];
 	
-	if (char_bytes == NULL || (row > 8 || row == 0) || (column > 16 || column == 0)) {
+	if (char_bytes == NULL || row > 8 || !row || column > 16 || !column) {
 		return SSD_ERR_PARAM;
 	}
 	

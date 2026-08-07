@@ -19,7 +19,7 @@ CONF_DIR 	:= config
 DOCS_DIR 	:= docs
 
 INC_DIRS 	:= $(wildcard $(APP_DIR)/*/) $(wildcard $(DRIV_DIR)/*/) $(wildcard $(SERV_DIR)/*/) $(BSP_DIR) $(CONF_DIR)
-WARN 		:= -Wall -Wextra -Wpedantic -Wshadow
+WARN 		:= -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Woverflow
 CPPFLAGS 	:= $(addprefix -I,$(INC_DIRS))
 CFLAGS		:= -mmcu=$(MCU) -Os -MMD -MP
 CFLAGS		+= $(CSTD) $(WARN)

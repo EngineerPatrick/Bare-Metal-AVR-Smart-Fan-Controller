@@ -93,7 +93,7 @@ static inline void ui_rotary_enc_handler(uint16_t* value, uint16_t rate, uint16_
 static ui_errors ui_system_configure_std(void) {
 	display_errors display_error_code = 0;
 	fan_curve_errors fan_curve_error_code = 0;
-	uint16_t node_temp[STD_FAN_CURVE_MAX_SIZE] = {UI_STD_TEMP_1, UI_STD_TEMP_2, UI_STD_TEMP_3, UI_STD_TEMP_4, UI_STD_TEMP_5, UI_STD_TEMP_6, UI_STD_TEMP_7, UI_STD_TEMP_8, UI_STD_TEMP_9, UI_STD_TEMP_10};
+	const uint16_t node_temp[STD_FAN_CURVE_MAX_SIZE] = {UI_STD_TEMP_1, UI_STD_TEMP_2, UI_STD_TEMP_3, UI_STD_TEMP_4, UI_STD_TEMP_5, UI_STD_TEMP_6, UI_STD_TEMP_7, UI_STD_TEMP_8, UI_STD_TEMP_9, UI_STD_TEMP_10};
 	uint16_t node_speed[STD_FAN_CURVE_MAX_SIZE] = {FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM};
 	uint8_t i = 0;
 	uint8_t prev_re_value = 0;
@@ -101,17 +101,6 @@ static ui_errors ui_system_configure_std(void) {
 	uint16_t rate = 0;
 	blink_options option = SPEED_THIRD_DIGIT;
 	uint8_t exit_flag = 0;
-	
-	if (UI_STD_CURVE_SIZE > STD_FAN_CURVE_MAX_SIZE) {
-		return UI_ERR_FAN_CURVE;
-	}
-	
-	for (uint8_t j = 0; j < STD_FAN_CURVE_MAX_SIZE; j++) {
-		
-		if (node_temp[i] > BME280_MAX_TEMP_C_X10 || node_temp[i] < BME280_MIN_TEMP_C_X10) {
-			return UI_ERR_FAN_CURVE;
-		}
-	}
 	
 	while (exit_flag != EXIT) {
 		
