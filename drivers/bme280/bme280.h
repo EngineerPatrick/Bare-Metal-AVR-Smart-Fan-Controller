@@ -71,6 +71,7 @@ bme_errors bme280_temp_init(void);
 *	@pre 	BME280_MAX_TEMP_C_X10 < 850
 *   @post   If passed parameters are invalid the transmission is not started and the variable temp_c_x10 is left unchanged
 *   @post   If an error with the 2-wire interface occurs the correct execution is not guaranteed
+*   @post   If bme280_temp_init has never been called it is called
 *	@post 	On success the measured value is compensated using the datasheet formulas and clamped within the valid boundaries
 *	@post 	On success the temperature is saved in the variable temp_c_x10
 *	@post 	On success the transmission is stopped and the sensor is left configured

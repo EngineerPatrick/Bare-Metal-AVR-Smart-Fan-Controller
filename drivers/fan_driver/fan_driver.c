@@ -77,20 +77,20 @@
 #define TIM2_CTRL_REG_B TCCR2B
 #define TIM2_CLEAR_PIN_ON_COMP (1 << COM2B1)
 #define TIM2_FAST_PWM_B (1 << WGM22)
-#define TIM2_PRSC 2
+#define TIM2_PRSC 2U
 
 #define TIM2_TOP_REG OCR2A
-#define TIM2_TOPVALUE 79
+#define TIM2_TOPVALUE 79U
 
 #define TIM2_DUTY_CYCLE_REG OCR2B
 #define TOP_DC_REG_VALUE TIM2_TOPVALUE
-#define HALF_DC_REG_VALUE 40
+#define HALF_DC_REG_VALUE 40U
 #define DC_REG_VALUE_RANGE (TOP_DC_REG_VALUE - MIN_DC_REG_VALUE)
 
 #define TIM1_COUNT_REG TCNT1
 
 #define TIM1_CTRL_REG_B TCCR1B
-#define TIM1_PRSC 2
+#define TIM1_PRSC 2U
 #define TIM1_RISING_EDGE_TRIGG (1 << ICES1)
 
 #define TIM1_INPUT_CAPTR_REG ICR1
@@ -102,13 +102,13 @@
 #define TIM1_INT_FLAG_REG TIFR1
 #define TIM1_OVERFLOW_FLAG (1 << TOV1)
 
-#define TIM1_RANGE_TICKS 65536
-#define TICK_PERIOD_NS 500
-#define TIM1_MAX_OVERFLOWS 65536
+#define TIM1_RANGE_TICKS 65536U
+#define TICK_PERIOD_NS 500U
+#define TIM1_MAX_OVERFLOWS 65536U
 
 #define FAN_DRIVER_SPEED_RANGE (FAN_DRIVER_MAX_SPEED_RPM - FAN_DRIVER_MIN_SPEED_RPM)
 
-#define TACH_PULSES_PER_REV 2
+#define TACH_PULSES_PER_REV 2U
 
 typedef struct {
 	uint16_t measured_speed_rpm;
@@ -174,8 +174,8 @@ ISR(TIMER1_OVF_vect) {
 
 static inline void fan_driver_pins_init(void) {
 	D0_D7_DATA_DIRECTION_REG |= FAN_PWM_DIRECTION;
-	D8_D13_DATA_DIRECTION_REG &= ~FAN_TACH_DIRECTION;
-	D8_D13_DATA_REG &= ~FAN_TACH_PULLUP_R;
+	D8_D13_DATA_DIRECTION_REG &= ((uint8_t) ~FAN_TACH_DIRECTION);
+	D8_D13_DATA_REG &= ((uint8_t) ~FAN_TACH_PULLUP_R);
 }
 
 static inline void fan_driver_tim2_fastpwm_init(void) {
@@ -283,7 +283,7 @@ static fan_driver_errors fan_driver_tach(void) {
 
 		if ((TIM2_DUTY_CYCLE_REG - MIN_DC_REG_VALUE >= MIN_DC_REG_STEP) && (TIM2_DUTY_CYCLE_REG - MIN_DC_REG_STEP != fan.prev_dc_reg_value)) {
 			fan.prev_dc_reg_value = TIM2_DUTY_CYCLE_REG;
-			TIM2_DUTY_CYCLE_REG -= MIN_DC_REG_STEP;
+			TIM2_DUTY_CYCLE_REG = (uint8_t) (TIM2_DUTY_CYCLE_REG - MIN_DC_REG_STEP);
 		}
 	}
 	

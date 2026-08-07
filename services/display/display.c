@@ -19,31 +19,31 @@
 #include "scheduler.h"
 #include "config.h"
 
-#define CHAR_PATTERN_BYTES 8
-#define SELECT_WORD_LENGTH 6
-#define MODE_WORD_LENGTH 4
-#define STANDARD_WORD_LENGTH 8
-#define ADVANCED_WORD_LENGTH 8
-#define TEMP_WORD_LENGTH 14
-#define SPEED_WORD_LENGTH 14
-#define NODE_WORD_LENGTH 4
-#define ERR_WORD_LENGTH 3
+#define CHAR_PATTERN_BYTES 8U
+#define SELECT_WORD_LENGTH 6U
+#define MODE_WORD_LENGTH 4U
+#define STANDARD_WORD_LENGTH 8U
+#define ADVANCED_WORD_LENGTH 8U
+#define TEMP_WORD_LENGTH 14U
+#define SPEED_WORD_LENGTH 14U
+#define NODE_WORD_LENGTH 4U
+#define ERR_WORD_LENGTH 3U
 
-#define DISPLAY_MIN_INDEX 1
-#define DISPLAY_MAX_INDEX 10
+#define DISPLAY_MIN_INDEX 1U
+#define DISPLAY_MAX_INDEX 10U
 
 /*
 *
 *	The value format is in tenth of degrees Celsius : 12.3°C = 123
 *
 */
-#define DISPLAY_MIN_TEMP_C_X10 0
-#define DISPLAY_MAX_TEMP_C_X10 999
-#define DISPLAY_TEMP_DIGITS 3
+#define DISPLAY_MIN_TEMP_C_X10 0U
+#define DISPLAY_MAX_TEMP_C_X10 999U
+#define DISPLAY_TEMP_DIGITS 3U
 
-#define DISPLAY_MIN_SPEED_RPM 0
-#define DISPLAY_MAX_SPEED_RPM 9999
-#define DISPLAY_SPEED_DIGITS 4
+#define DISPLAY_MIN_SPEED_RPM 0U
+#define DISPLAY_MAX_SPEED_RPM 9999U
+#define DISPLAY_SPEED_DIGITS 4U
 
 /*
 *
@@ -469,7 +469,7 @@ static display_errors display_pattern_write(const uint8_t* pattern_add, uint8_t 
 	
 	if (pattern_add != NULL) {
 	
-		for (uint8_t i = 0; i < 8; i++) {
+		for (size_t i = 0; i < 8; i++) {
 			pattern[i] = pgm_read_byte(pattern_add + i);
 		}
 	}
@@ -514,12 +514,12 @@ static display_errors display_word_write(const uint8_t* const* word, uint8_t len
 static void display_digits_extract(uint16_t full_value, uint8_t* digits, uint8_t length) {
 	uint16_t divisor = 1;
 	
-	for (uint8_t i = 1; i < length; i++) {
+	for (size_t i = 1; i < length; i++) {
 		divisor *= 10;
 	}
 	
-	for (uint8_t i = 0; i < length; i++) {
-		*(digits + i) = (!i) ? full_value / divisor : (full_value / divisor) % 10;
+	for (size_t i = 0; i < length; i++) {
+		*(digits + i) = (!i) ? (uint8_t) (full_value / divisor) : (uint8_t) ((full_value / divisor) % 10);
 		divisor /= 10;
 	}
 }
@@ -643,8 +643,8 @@ display_errors display_temp_write(uint16_t temp_c_x10) {
 	
 	display_digits_extract(temp_c_x10, digits, DISPLAY_TEMP_DIGITS);
 	
-	for (uint8_t i = 0; i < DISPLAY_TEMP_DIGITS; i++) {
-		error_code = display_pattern_write(pgm_read_ptr_near(DIGITS + digits[i]), TEMP_DIGITS_ROW, TEMP_DIGITS_COLUMN + i + (i / 2));
+	for (size_t i = 0; i < DISPLAY_TEMP_DIGITS; i++) {
+		error_code = display_pattern_write(pgm_read_ptr_near(DIGITS + digits[i]), TEMP_DIGITS_ROW, (uint8_t) (TEMP_DIGITS_COLUMN + i + (i / 2)));
 		
 		if (error_code != DISPLAY_ERR_OK) {
 			return error_code;

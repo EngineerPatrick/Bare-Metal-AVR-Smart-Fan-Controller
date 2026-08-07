@@ -50,7 +50,7 @@ static inline void fault_manager_buzz_pullup(void) {
 }
 
 static inline void fault_manager_buzz_pulldown(void) {
-	D14_D19_DATA_REG &= ~BUZZER_OUTPUT;
+	D14_D19_DATA_REG &= ((uint8_t) ~BUZZER_OUTPUT);
 }
 
 static void fault_manager_buzzer(uint16_t duration_s) {
