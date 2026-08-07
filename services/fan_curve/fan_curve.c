@@ -18,12 +18,11 @@
 #include "crc.h"
 #include "config.h"
 
-#define FAN_CURVE_ZERO_SIZE 0
-#define FAN_CURVE_MAX_SIZE 10
+#define FAN_CURVE_MAX_SIZE 10U
 #define FAN_CURVE_MIN_TEMP_C 0
-#define FAN_CURVE_MAX_TEMP_C 999
+#define FAN_CURVE_MAX_TEMP_C 999U
 #define FAN_CURVE_MIN_SPEED_RPM 0
-#define FAN_CURVE_MAX_SPEED_RPM 9999
+#define FAN_CURVE_MAX_SPEED_RPM 9999U
 
 typedef struct {
     uint16_t temp_c;
@@ -36,7 +35,7 @@ typedef struct {
     uint16_t crc;
 } fan_curve;
 
-static fan_curve ee_fan_curve EEMEM = {FAN_CURVE_ZERO_SIZE, { {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM} }, 0 };
+static fan_curve ee_fan_curve EEMEM = {0};
 
 static uint16_t fan_curve_crc_calculate(const fan_curve* curve_ptr) {
     return crc16_ccitt(offsetof(fan_curve, crc), (const uint8_t*) curve_ptr);
@@ -51,8 +50,8 @@ static inline void fan_curve_load(fan_curve* curve_ptr) {
 }
 
 fan_curve_errors fan_curve_create(uint8_t curve_size, const uint16_t* node_temp, const uint16_t* node_speed) {
-	fan_curve loaded_curve = {FAN_CURVE_ZERO_SIZE, { {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM} }, 0 };
-	fan_curve check_curve = {FAN_CURVE_ZERO_SIZE, { {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM} }, 0 };
+	fan_curve loaded_curve = {0};
+	fan_curve check_curve = {0};
 	
 	if (curve_size > FAN_CURVE_MAX_SIZE || !curve_size || node_temp == NULL || node_speed == NULL) {
 		return FAN_CURVE_ERR_PARAM;
@@ -60,7 +59,7 @@ fan_curve_errors fan_curve_create(uint8_t curve_size, const uint16_t* node_temp,
 	
 	check_curve.size = curve_size;
 	
-	for (uint8_t i = 0; i < curve_size; i++) {
+	for (size_t i = 0; i < curve_size; i++) {
 		
 		if (*(node_temp + i) > FAN_CURVE_MAX_TEMP_C || *(node_speed + i) > FAN_CURVE_MAX_SPEED_RPM) {
 			return FAN_CURVE_ERR_PARAM;
@@ -94,7 +93,7 @@ fan_curve_errors fan_curve_create(uint8_t curve_size, const uint16_t* node_temp,
 }
 
 fan_curve_errors fan_curve_get_speed(uint16_t temp_c, uint16_t* speed_rpm) {
-	fan_curve loaded_curve = {FAN_CURVE_ZERO_SIZE, { {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM}, {FAN_CURVE_MIN_TEMP_C, FAN_CURVE_MIN_SPEED_RPM} }, 0 };
+	fan_curve loaded_curve = {0};
 	uint32_t dx = 0;
 	uint32_t dy = 0;
 	uint32_t dT = 0;
@@ -109,7 +108,7 @@ fan_curve_errors fan_curve_get_speed(uint16_t temp_c, uint16_t* speed_rpm) {
 		return FAN_CURVE_ERR_EEPROM;
 	}
 	
-	for (uint8_t i = 0; i < loaded_curve.size; i++) {
+	for (size_t i = 0; i < loaded_curve.size; i++) {
 		
 		if (loaded_curve.nodes[i].temp_c > FAN_CURVE_MAX_TEMP_C || loaded_curve.nodes[i].speed_rpm > FAN_CURVE_MAX_SPEED_RPM) {
 			return FAN_CURVE_ERR_EEPROM;
@@ -132,14 +131,14 @@ fan_curve_errors fan_curve_get_speed(uint16_t temp_c, uint16_t* speed_rpm) {
 		return FAN_CURVE_ERR_OK;
 	}
 	
-	for (uint8_t i = 0; i < loaded_curve.size - 1; i++) {
+	for (size_t i = 0; i < loaded_curve.size - 1U; i++) {
 		
 		if (loaded_curve.nodes[i].temp_c == temp_c || (!i && temp_c <= loaded_curve.nodes[i].temp_c)) {
 			*speed_rpm = loaded_curve.nodes[i].speed_rpm;
 			break;
 		}
 		
-		else if ((loaded_curve.nodes[i + 1].temp_c == temp_c) || (i == loaded_curve.size - 2 && temp_c >= loaded_curve.nodes[i + 1].temp_c)) {
+		else if ((loaded_curve.nodes[i + 1].temp_c == temp_c) || (i == loaded_curve.size - 2U && temp_c >= loaded_curve.nodes[i + 1].temp_c)) {
 			*speed_rpm = loaded_curve.nodes[i + 1].speed_rpm;
 			break;
 		}
