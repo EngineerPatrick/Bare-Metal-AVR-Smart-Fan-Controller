@@ -16,26 +16,28 @@
 #include "ui.h"
 
 typedef enum {
-	F_MAN_ERR_OK = 0,
-	F_MAN_ERR_PARAM,
-	F_MAN_ERR_DISPLAY
-} f_man_errors;
+	FAULT_MANAGER_ERR_OK = 0,
+	FAULT_MANAGER_ERR_PARAM,
+	FAULT_MANAGER_ERR_DISPLAY
+} fault_manager_errors;
 
 /**
 *
-*	@brief	Handles the UI module error codes.
+*	@brief	Reports the UI module error codes.
 *
-*	@param	ui_error_code			Error code from the UI module
+*	@param	ui_error_code					Error code from the UI module
 *
-*	@retval	F_MAN_ERR_OK 			If no error occurs
-*	@retval	F_MAN_ERR_PARAM			If ui_error_code > UI_ERR_FAN_DRIVER
-*	@retval	F_MAN_ERR_DISPLAY		If an error with the display occurs
+*	@retval	FAULT_MANAGER_ERR_OK 			If no error occurs
+*	@retval	FAULT_MANAGER_ERR_PARAM			If ui_error_code > UI_ERR_FAN_DRIVER
+*	@retval	FAULT_MANAGER_ERR_DISPLAY		If an error with the display occurs
 *
 *	@pre 	ui_error_code <= UI_ERR_FAN_DRIVER
+*	@pre 	The scheduler must be activated by calling scheduler_timer_boot
+*	@post 	If scheduler_timer_boot has not been called the correct execution is not guaranteed
 *	@post 	If passed parameter is invalid no LED or buzzer is activated and the display is left unchanged
 *	@post 	On success the display prints the error code and the corresponding LED or buzzer is activated
 *
 */
-f_man_errors fault_manager_ui(ui_errors ui_error_code);
+fault_manager_errors fault_manager_ui_report(ui_errors ui_error_code);
 
 #endif

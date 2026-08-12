@@ -23,65 +23,81 @@
 #include "pin_map.h"
 #include "board.h"
 
-#define STD_FAN_CURVE_MAX_SIZE 10U
-#define ADV_FAN_CURVE_MAX_SIZE 10U
+#define FAN_CURVE_MAX_SIZE 10U
 
 #define TEMP_MIN_RATE 1U
 #define TEMP_MAX_RATE 100U
 #define SPEED_MIN_RATE 10U
 #define SPEED_MAX_RATE 1000U
-#define EXIT 99
-#define STANDARD 1
-#define ADVANCED 2
 
-static inline void ui_rate_init(void) {
+#define STANDARD_MODE 1
+#define ADVANCED_MODE 2
+
+static inline void rate_pin_init(void) {
 	D0_D7_DATA_DIRECTION_REG &= ((uint8_t) ~RATE_BUTTON_DIRECTION);
 	D0_D7_DATA_REG |= RATE_BUTTON_PULLUP_R;
 }
 
-static inline void ui_select_init(void) {
+static inline void select_pin_init(void) {
 	D0_D7_DATA_DIRECTION_REG &= ((uint8_t) ~SELECT_BUTTON_DIRECTION);
 	D0_D7_DATA_REG |= SELECT_BUTTON_PULLUP_R;
 }
 
-static inline void ui_confirm_init(void) {
+static inline void confirm_pin_init(void) {
 	D0_D7_DATA_DIRECTION_REG &= ((uint8_t) ~CONFIRM_BUTTON_DIRECTION);
 	D0_D7_DATA_REG |= CONFIRM_BUTTON_PULLUP_R;
 }
 
-static inline void ui_re_clk_init(void) {
+static inline void re_clk_pin_init(void) {
 	D0_D7_DATA_DIRECTION_REG &= ((uint8_t) ~ROT_ENC_CLK_DIRECTION);
 	D0_D7_DATA_REG |= ROT_ENC_CLK_PULLUP_R;
 }
 
-static inline void ui_re_dt_init(void) {
+static inline void re_dt_pin_init(void) {
 	D0_D7_DATA_DIRECTION_REG &= ((uint8_t) ~ROT_ENC_DT_DIRECTION);
 	D0_D7_DATA_REG |= ROT_ENC_DT_PULLUP_R;
 }
 
-static inline uint8_t ui_rate_state(void) {
+static inline uint8_t rate_pin_state(void) {
 	return (!(D0_D7_INPUT_PINS_REG & RATE_BUTTON_INPUT)) ? 1 : 0;
 }
 
-static inline uint8_t ui_select_state(void) {
+static inline uint8_t select_pin_state(void) {
 	return (!(D0_D7_INPUT_PINS_REG & SELECT_BUTTON_INPUT)) ? 1 : 0;
 }
 
-static inline uint8_t ui_confirm_state(void) {
+static inline uint8_t confirm_pin_state(void) {
 	return (!(D0_D7_INPUT_PINS_REG & CONFIRM_BUTTON_INPUT)) ? 1 : 0;
 }
 
-static inline uint8_t ui_re_clk_state(void) {
+static inline uint8_t re_clk_pin_state(void) {
 	return (!(D0_D7_INPUT_PINS_REG & ROT_ENC_CLK_INPUT)) ? 1 : 0;
 }
 
-static inline uint8_t ui_re_dt_state(void) {
+static inline uint8_t re_dt_pin_state(void) {
 	return (!(D0_D7_INPUT_PINS_REG & ROT_ENC_DT_INPUT)) ? 1 : 0;
 }
 
-static inline void ui_rotary_enc_handler(uint16_t* value, uint16_t rate, uint16_t min_value, uint16_t max_value) {
+static uint8_t pins_init_flag = 0;
+
+static void pins_init(void) {
 	
-	if (ui_re_dt_state() != ui_re_clk_state()) {
+	if (pins_init_flag) {
+		return;
+	}
+
+	rate_pin_init();
+	select_pin_init();
+	confirm_pin_init();
+	re_clk_pin_init();
+	re_dt_pin_init();
+	
+	pins_init_flag = 1;
+}
+
+static inline void rotary_enc_read(uint16_t* value, uint16_t rate, uint16_t min_value, uint16_t max_value) {
+	
+	if (re_dt_pin_state() != re_clk_pin_state()) {
 		*(value) = (*(value) <= max_value - rate) ? *(value) + rate : *(value);
 	}
 	
@@ -90,23 +106,23 @@ static inline void ui_rotary_enc_handler(uint16_t* value, uint16_t rate, uint16_
 	}
 }
 
-static ui_errors ui_system_configure_std(void) {
+static ui_errors standard_mode_config(void) {
 	display_errors display_error_code = 0;
 	fan_curve_errors fan_curve_error_code = 0;
-	const uint16_t node_temp[STD_FAN_CURVE_MAX_SIZE] = {UI_STD_TEMP_1, UI_STD_TEMP_2, UI_STD_TEMP_3, UI_STD_TEMP_4, UI_STD_TEMP_5, UI_STD_TEMP_6, UI_STD_TEMP_7, UI_STD_TEMP_8, UI_STD_TEMP_9, UI_STD_TEMP_10};
-	uint16_t node_speed[STD_FAN_CURVE_MAX_SIZE] = {FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM};
-	uint8_t i = 0;
+	const uint16_t node_temp[FAN_CURVE_MAX_SIZE] = {UI_STD_TEMP_1, UI_STD_TEMP_2, UI_STD_TEMP_3, UI_STD_TEMP_4, UI_STD_TEMP_5, UI_STD_TEMP_6, UI_STD_TEMP_7, UI_STD_TEMP_8, UI_STD_TEMP_9, UI_STD_TEMP_10};
+	uint16_t node_speed[FAN_CURVE_MAX_SIZE] = {FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM};
+	size_t i = 0;
 	uint8_t prev_re_value = 0;
 	uint16_t prev_speed_rpm = FAN_DRIVER_MIN_SPEED_RPM;
 	uint16_t rate = 0;
 	blink_options option = SPEED_THIRD_DIGIT;
 	uint8_t exit_flag = 0;
 	
-	while (exit_flag != EXIT) {
+	while (!exit_flag) {
 		
 		if (i > 0) {
-			prev_speed_rpm = node_speed[i - 1];
 			node_speed[i] = (node_speed[i] < node_speed[i - 1]) ? node_speed[i - 1] : node_speed[i];
+			prev_speed_rpm = node_speed[i - 1];
 		}
 	
 		display_error_code = display_index_write(i + 1);
@@ -129,29 +145,29 @@ static ui_errors ui_system_configure_std(void) {
 		
 		rate = SPEED_MIN_RATE;
 		option = SPEED_THIRD_DIGIT;
-		display_digit_blink(BLINK_TIME_MS, option, *(node_speed + i));
+		display_digit_blink(DISPLAY_BLINK_TIME_MS, option, *(node_speed + i));
 		
 		while (1) {
-			display_error_code = display_blink_switch();
+			display_error_code = display_blink_state_switch();
 			
 			if (display_error_code != DISPLAY_ERR_OK) {
 				return UI_ERR_DISPLAY;
 			}
 			
-			if (ui_re_clk_state() != prev_re_value) {
-				ui_rotary_enc_handler(node_speed + i, rate, prev_speed_rpm, FAN_DRIVER_MAX_SPEED_RPM);
-				prev_re_value = ui_re_clk_state();
+			if (re_clk_pin_state() != prev_re_value) {
+				rotary_enc_read(node_speed + i, rate, prev_speed_rpm, FAN_DRIVER_MAX_SPEED_RPM);
+				prev_re_value = re_clk_pin_state();
 				display_error_code = display_speed_write(*(node_speed + i));
 			
 				if (display_error_code != DISPLAY_ERR_OK) {
 					return UI_ERR_DISPLAY;
 				}
 				
-				display_digit_blink(BLINK_TIME_MS, option, *(node_speed + i));
+				display_digit_blink(DISPLAY_BLINK_TIME_MS, option, *(node_speed + i));
 			}
 			
-			if (ui_rate_state()) {
-				scheduler_timer_delay(BUTTONS_DEBOUNCE_TIME_MS);
+			if (rate_pin_state()) {
+				scheduler_timer_delay(UI_BUTTONS_DEBOUNCE_TIME_MS);
 				option = (rate < SPEED_MAX_RATE) ? option - 1 : SPEED_THIRD_DIGIT;
 				rate = (rate < SPEED_MAX_RATE) ? rate * 10 : SPEED_MIN_RATE;
 				display_error_code = display_speed_write(*(node_speed + i));
@@ -160,17 +176,17 @@ static ui_errors ui_system_configure_std(void) {
 					return UI_ERR_DISPLAY;
 				}
 				
-				display_digit_blink(BLINK_TIME_MS, option, *(node_speed + i));
+				display_digit_blink(DISPLAY_BLINK_TIME_MS, option, *(node_speed + i));
 			}
 			
-			if (ui_confirm_state()) {
-				scheduler_timer_delay(BUTTONS_DEBOUNCE_TIME_MS);
-				exit_flag = EXIT;
+			if (confirm_pin_state()) {
+				scheduler_timer_delay(UI_BUTTONS_DEBOUNCE_TIME_MS);
+				exit_flag = 1;
 				break;
 			}
 			
-			if (ui_select_state()) {
-				scheduler_timer_delay(BUTTONS_DEBOUNCE_TIME_MS);
+			if (select_pin_state()) {
+				scheduler_timer_delay(UI_BUTTONS_DEBOUNCE_TIME_MS);
 				
 				if (i < (UI_STD_CURVE_SIZE - 1)) {
 					i++;
@@ -190,7 +206,7 @@ static ui_errors ui_system_configure_std(void) {
 		node_speed[i + 1] = (node_speed[i] > node_speed[i + 1]) ? node_speed[i] : node_speed[i + 1];
 	}
 	
-	fan_curve_error_code = fan_curve_create(UI_STD_CURVE_SIZE, node_temp, node_speed);
+	fan_curve_error_code = fan_curve_eeprom_update(UI_STD_CURVE_SIZE, node_temp, node_speed);
 	
 	if (fan_curve_error_code != FAN_CURVE_ERR_OK) {
 		return UI_ERR_FAN_CURVE;
@@ -199,12 +215,12 @@ static ui_errors ui_system_configure_std(void) {
 	return UI_ERR_OK;	
 }
 
-static ui_errors ui_system_configure_adv(void) {
+static ui_errors advanced_mode_config(void) {
 	display_errors display_error_code = 0;
 	fan_curve_errors fan_curve_error_code = 0;
-	uint16_t node_temp[ADV_FAN_CURVE_MAX_SIZE] = {BME280_MIN_TEMP_C_X10, BME280_MIN_TEMP_C_X10, BME280_MIN_TEMP_C_X10, BME280_MIN_TEMP_C_X10, BME280_MIN_TEMP_C_X10, BME280_MIN_TEMP_C_X10, BME280_MIN_TEMP_C_X10, BME280_MIN_TEMP_C_X10, BME280_MIN_TEMP_C_X10, BME280_MIN_TEMP_C_X10};
-	uint16_t node_speed[ADV_FAN_CURVE_MAX_SIZE] = {FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM};
-	uint8_t i = 0;
+	uint16_t node_temp[FAN_CURVE_MAX_SIZE] = {BME280_MIN_TEMP_C_X10, BME280_MIN_TEMP_C_X10, BME280_MIN_TEMP_C_X10, BME280_MIN_TEMP_C_X10, BME280_MIN_TEMP_C_X10, BME280_MIN_TEMP_C_X10, BME280_MIN_TEMP_C_X10, BME280_MIN_TEMP_C_X10, BME280_MIN_TEMP_C_X10, BME280_MIN_TEMP_C_X10};
+	uint16_t node_speed[FAN_CURVE_MAX_SIZE] = {FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM, FAN_DRIVER_MIN_SPEED_RPM};
+	size_t i = 0;
 	uint8_t prev_re_value = 0;
 	uint16_t prev_temp_c_x10 = BME280_MIN_TEMP_C_X10;
 	uint16_t prev_speed_rpm = FAN_DRIVER_MIN_SPEED_RPM;
@@ -215,12 +231,12 @@ static ui_errors ui_system_configure_adv(void) {
 	while (1) {
 		
 		if (i > 0) {
-			prev_temp_c_x10 = node_temp[i - 1];
+			node_temp[i] = (node_temp[i] <= node_temp[i - 1]) ? node_temp[i - 1] + 1 : node_temp[i];
+			node_speed[i] = (node_speed[i] < node_speed[i - 1]) ? node_speed[i - 1] : node_speed[i];
+			prev_temp_c_x10 = node_temp[i - 1] + 1;
 			prev_speed_rpm = node_speed[i - 1];
-			node_speed[i] = (node_speed[i] <= node_speed[i - 1]) ? node_speed[i - 1] : node_speed[i];
-			node_temp[i] = (node_temp[i] <= node_temp[i - 1]) ? node_temp[i - 1] : node_temp[i];
 		}
-		
+				
 		display_error_code = display_index_write(i + 1);
 			
 		if (display_error_code != DISPLAY_ERR_OK) {
@@ -241,29 +257,29 @@ static ui_errors ui_system_configure_adv(void) {
 		
 		rate = TEMP_MIN_RATE;
 		option = TEMP_THIRD_DIGIT;
-		display_digit_blink(BLINK_TIME_MS, option, *(node_temp + i));
+		display_digit_blink(DISPLAY_BLINK_TIME_MS, option, *(node_temp + i));
 		
 		while (1) {
-			display_error_code = display_blink_switch();
+			display_error_code = display_blink_state_switch();
 			
 			if (display_error_code != DISPLAY_ERR_OK) {
 				return UI_ERR_DISPLAY;
 			}
 			
-			if (ui_re_clk_state() != prev_re_value) {
-				ui_rotary_enc_handler(node_temp + i, rate, prev_temp_c_x10, BME280_MAX_TEMP_C_X10);
-				prev_re_value = ui_re_clk_state();
+			if (re_clk_pin_state() != prev_re_value) {
+				rotary_enc_read(node_temp + i, rate, prev_temp_c_x10, BME280_MAX_TEMP_C_X10);
+				prev_re_value = re_clk_pin_state();
 				display_error_code = display_temp_write(*(node_temp + i));
 			
 				if (display_error_code != DISPLAY_ERR_OK) {
 					return UI_ERR_DISPLAY;
 				}
 				
-				display_digit_blink(BLINK_TIME_MS, option, *(node_temp + i));
+				display_digit_blink(DISPLAY_BLINK_TIME_MS, option, *(node_temp + i));
 			}
 			
-			if (ui_rate_state()) {
-				scheduler_timer_delay(BUTTONS_DEBOUNCE_TIME_MS);
+			if (rate_pin_state()) {
+				scheduler_timer_delay(UI_BUTTONS_DEBOUNCE_TIME_MS);
 				option = (rate < TEMP_MAX_RATE) ? option - 1 : TEMP_THIRD_DIGIT;
 				rate = (rate < TEMP_MAX_RATE) ? rate * 10 : TEMP_MIN_RATE;
 				display_error_code = display_temp_write(*(node_temp + i));
@@ -272,18 +288,18 @@ static ui_errors ui_system_configure_adv(void) {
 					return UI_ERR_DISPLAY;
 				}
 				
-				display_digit_blink(BLINK_TIME_MS, option, *(node_temp + i));
+				display_digit_blink(DISPLAY_BLINK_TIME_MS, option, *(node_temp + i));
 			}
 			
 			
-			if (ui_confirm_state()) {
-				scheduler_timer_delay(BUTTONS_DEBOUNCE_TIME_MS);
-				exit_flag = EXIT;
+			if (confirm_pin_state()) {
+				scheduler_timer_delay(UI_BUTTONS_DEBOUNCE_TIME_MS);
+				exit_flag = 1;
 				break;
 			}
 			
-			if (ui_select_state()) {
-				scheduler_timer_delay(BUTTONS_DEBOUNCE_TIME_MS);
+			if (select_pin_state()) {
+				scheduler_timer_delay(UI_BUTTONS_DEBOUNCE_TIME_MS);
 				display_error_code = display_temp_write(*(node_temp + i));
 			
 				if (display_error_code != DISPLAY_ERR_OK) {
@@ -294,35 +310,35 @@ static ui_errors ui_system_configure_adv(void) {
 			}
 		}
 		
-		if (exit_flag == EXIT) {
+		if (exit_flag) {
 			break;
 		}
 		
 		rate = SPEED_MIN_RATE;
 		option = SPEED_THIRD_DIGIT;
-		display_digit_blink(BLINK_TIME_MS, option, *(node_speed + i));
+		display_digit_blink(DISPLAY_BLINK_TIME_MS, option, *(node_speed + i));
 		
 		while (1) {
-			display_error_code = display_blink_switch();
+			display_error_code = display_blink_state_switch();
 			
 			if (display_error_code != DISPLAY_ERR_OK) {
 				return UI_ERR_DISPLAY;
 			}
 			
-			if (ui_re_clk_state() != prev_re_value) {
-				ui_rotary_enc_handler(node_speed + i, rate, prev_speed_rpm, FAN_DRIVER_MAX_SPEED_RPM);
-				prev_re_value = ui_re_clk_state();
+			if (re_clk_pin_state() != prev_re_value) {
+				rotary_enc_read(node_speed + i, rate, prev_speed_rpm, FAN_DRIVER_MAX_SPEED_RPM);
+				prev_re_value = re_clk_pin_state();
 				display_error_code = display_speed_write(*(node_speed + i));
 			
 				if (display_error_code != DISPLAY_ERR_OK) {
 					return UI_ERR_DISPLAY;
 				}
 				
-				display_digit_blink(BLINK_TIME_MS, option, *(node_speed + i));
+				display_digit_blink(DISPLAY_BLINK_TIME_MS, option, *(node_speed + i));
 			}
 			
-			if (ui_rate_state()) {
-				scheduler_timer_delay(BUTTONS_DEBOUNCE_TIME_MS);
+			if (rate_pin_state()) {
+				scheduler_timer_delay(UI_BUTTONS_DEBOUNCE_TIME_MS);
 				option = (rate < SPEED_MAX_RATE) ? option - 1 : SPEED_THIRD_DIGIT;
 				rate = (rate < SPEED_MAX_RATE) ? rate * 10 : SPEED_MIN_RATE;
 				display_error_code = display_speed_write(*(node_speed + i));
@@ -331,20 +347,20 @@ static ui_errors ui_system_configure_adv(void) {
 					return UI_ERR_DISPLAY;
 				}
 				
-				display_digit_blink(BLINK_TIME_MS, option, *(node_speed + i));
+				display_digit_blink(DISPLAY_BLINK_TIME_MS, option, *(node_speed + i));
 			}
 			
 			
-			if (ui_confirm_state()) {
-				scheduler_timer_delay(BUTTONS_DEBOUNCE_TIME_MS);
-				exit_flag = EXIT;
+			if (confirm_pin_state()) {
+				scheduler_timer_delay(UI_BUTTONS_DEBOUNCE_TIME_MS);
+				exit_flag = 1;
 				break;
 			}
 			
-			if (ui_select_state()) {
-				scheduler_timer_delay(BUTTONS_DEBOUNCE_TIME_MS);
+			if (select_pin_state()) {
+				scheduler_timer_delay(UI_BUTTONS_DEBOUNCE_TIME_MS);
 				
-				if (i < (ADV_FAN_CURVE_MAX_SIZE - 1)) {
+				if (i < (FAN_CURVE_MAX_SIZE - 1)) {
 					i++;
 					break;
 				}
@@ -358,17 +374,17 @@ static ui_errors ui_system_configure_adv(void) {
 			}
 		}
 		
-		if (exit_flag == EXIT) {
+		if (exit_flag) {
 			break;
 		}
 	}
 	
-	for (i = 0; i < (ADV_FAN_CURVE_MAX_SIZE - 1); i++) {
-		node_temp[i + 1] = (node_temp[i] > node_temp[i + 1]) ? node_temp[i] : node_temp[i + 1];
+	for (i = 0; i < (FAN_CURVE_MAX_SIZE - 1); i++) {
+		node_temp[i + 1] = (node_temp[i] >= node_temp[i + 1]) ? node_temp[i] + 1 : node_temp[i + 1];
 		node_speed[i + 1] = (node_speed[i] > node_speed[i + 1]) ? node_speed[i] : node_speed[i + 1];
 	}
 		
-	fan_curve_error_code = fan_curve_create(ADV_FAN_CURVE_MAX_SIZE, node_temp, node_speed);
+	fan_curve_error_code = fan_curve_eeprom_update(FAN_CURVE_MAX_SIZE, node_temp, node_speed);
 	
 	if (fan_curve_error_code != FAN_CURVE_ERR_OK) {
 		return UI_ERR_FAN_CURVE;
@@ -377,20 +393,17 @@ static ui_errors ui_system_configure_adv(void) {
 	return UI_ERR_OK;		
 }
 
-ui_errors ui_system_configure(void) {
+ui_errors ui_system_config(void) {
 	display_errors display_error_code = 0;
 	ui_errors ui_error_code = 0;
-	uint8_t choice = STANDARD;
+	uint8_t config_mode = STANDARD_MODE;
 	uint8_t exit_flag = 0;
 	
-	fan_driver_boot();
-	fan_driver_stop();
+	fan_driver_controller_stop();
 	
-	ui_rate_init();
-	ui_select_init();
-	ui_confirm_init();
-	ui_re_clk_init();
-	ui_re_dt_init();
+	if (!pins_init_flag) {
+		pins_init();
+	}
 	
 	display_error_code = display_intro_write();
 	
@@ -398,13 +411,13 @@ ui_errors ui_system_configure(void) {
 		return UI_ERR_DISPLAY;
 	}
 	
-	display_error_code = display_std_write();
+	display_error_code = display_standard_write();
 	
 	if (display_error_code != DISPLAY_ERR_OK) {
 		return UI_ERR_DISPLAY;
 	}
 	
-	display_error_code = display_adv_write();
+	display_error_code = display_advanced_write();
 	
 	if (display_error_code != DISPLAY_ERR_OK) {
 		return UI_ERR_DISPLAY;
@@ -412,73 +425,73 @@ ui_errors ui_system_configure(void) {
 	
 	while (1) {
 	
-		display_word_blink(BLINK_TIME_MS, STANDARD_WORD);
+		display_word_blink(DISPLAY_BLINK_TIME_MS, STANDARD_WORD);
 		
-		while (choice == STANDARD) {
-			display_error_code = display_blink_switch();
+		while (config_mode == STANDARD_MODE) {
+			display_error_code = display_blink_state_switch();
 			
 			if (display_error_code != DISPLAY_ERR_OK) {
 				return UI_ERR_DISPLAY;
 			}
 			
-			if (ui_confirm_state()) {
-				scheduler_timer_delay(BUTTONS_DEBOUNCE_TIME_MS);
-				exit_flag = EXIT;
+			if (confirm_pin_state()) {
+				scheduler_timer_delay(UI_BUTTONS_DEBOUNCE_TIME_MS);
+				exit_flag = 1;
 				break;
 			}
 			
-			if (ui_select_state()) {
-				scheduler_timer_delay(BUTTONS_DEBOUNCE_TIME_MS);
-				choice = ADVANCED;
-				display_error_code = display_std_write();
+			if (select_pin_state()) {
+				scheduler_timer_delay(UI_BUTTONS_DEBOUNCE_TIME_MS);
+				config_mode = ADVANCED_MODE;
+				display_error_code = display_standard_write();
 				
 				if (display_error_code != DISPLAY_ERR_OK) {
 					return UI_ERR_DISPLAY;
 				}
 			}
 			
-			if (ui_rate_state()) {
-				scheduler_timer_delay(BUTTONS_DEBOUNCE_TIME_MS);
+			if (rate_pin_state()) {
+				scheduler_timer_delay(UI_BUTTONS_DEBOUNCE_TIME_MS);
 				return UI_ERR_OK;
 			}
 		}
 			
-		if (exit_flag == EXIT) {
+		if (exit_flag) {
 			break;
 		}
 			
-		display_word_blink(BLINK_TIME_MS, ADVANCED_WORD);
+		display_word_blink(DISPLAY_BLINK_TIME_MS, ADVANCED_WORD);
 		
-		while (choice == ADVANCED) {
-			display_error_code = display_blink_switch();
+		while (config_mode == ADVANCED_MODE) {
+			display_error_code = display_blink_state_switch();
 			
 			if (display_error_code != DISPLAY_ERR_OK) {
 				return UI_ERR_DISPLAY;
 			}
 			
-			if (ui_confirm_state()) {
-				scheduler_timer_delay(BUTTONS_DEBOUNCE_TIME_MS);
-				exit_flag = EXIT;
+			if (confirm_pin_state()) {
+				scheduler_timer_delay(UI_BUTTONS_DEBOUNCE_TIME_MS);
+				exit_flag = 1;
 				break;
 			}
 			
-			if (ui_select_state()) {
-				scheduler_timer_delay(BUTTONS_DEBOUNCE_TIME_MS);
-				choice = STANDARD;
-				display_error_code = display_adv_write();
+			if (select_pin_state()) {
+				scheduler_timer_delay(UI_BUTTONS_DEBOUNCE_TIME_MS);
+				config_mode = STANDARD_MODE;
+				display_error_code = display_advanced_write();
 				
 				if (display_error_code != DISPLAY_ERR_OK) {
 					return UI_ERR_DISPLAY;
 				}
 			}
 			
-			if (ui_rate_state()) {
-				scheduler_timer_delay(BUTTONS_DEBOUNCE_TIME_MS);
+			if (rate_pin_state()) {
+				scheduler_timer_delay(UI_BUTTONS_DEBOUNCE_TIME_MS);
 				return UI_ERR_OK;
 			}
 		}
 			
-		if (exit_flag == EXIT) {
+		if (exit_flag) {
 			break;
 		}
 	}
@@ -489,8 +502,8 @@ ui_errors ui_system_configure(void) {
 		return UI_ERR_DISPLAY;
 	}
 	
-	if (choice == STANDARD) {
-		ui_error_code = ui_system_configure_std();
+	if (config_mode == STANDARD_MODE) {
+		ui_error_code = standard_mode_config();
 		
 		if (ui_error_code != UI_ERR_OK) {
 			return ui_error_code;
@@ -498,7 +511,7 @@ ui_errors ui_system_configure(void) {
 	}
 	
 	else {
-		ui_error_code = ui_system_configure_adv();
+		ui_error_code = advanced_mode_config();
 		
 		if (ui_error_code != UI_ERR_OK) {
 			return ui_error_code;
@@ -508,15 +521,19 @@ ui_errors ui_system_configure(void) {
 	return UI_ERR_OK;
 }
 
-ui_errors ui_system_update(void) {
+ui_errors ui_system_runtime_loop(void) {
 	display_errors display_error_code = 0;
 	bme_errors bme_error_code = 0;
 	fan_curve_errors fan_curve_error_code = 0;
 	fan_driver_errors fan_driver_error_code = 0;
-	int16_t temp_c_x10 = 0;
-	uint16_t target_speed_rpm = 0;
+	int16_t measured_temp_c_x10 = 0;
 	uint16_t measured_speed_rpm = 0;
-	uint16_t t_zero_ms = 0;
+	uint16_t target_speed_rpm = 0;
+	uint16_t fan_boot_t_0_ms = 0;
+	uint16_t speed_update_t_0_ms = 0;
+	uint16_t temp_update_t_0_ms = 0;
+	uint16_t display_update_t_0_ms = 0;
+	uint8_t fan_boot_flag = 0;
 	
 	display_error_code = display_units_write();
 	
@@ -524,59 +541,88 @@ ui_errors ui_system_update(void) {
 		return UI_ERR_DISPLAY;
 	}
 	
-	bme_error_code = bme280_temp_init();
-	
-	if (bme_error_code != BME_ERR_OK) {
-		return UI_ERR_BME;
-	}
-	
-	fan_driver_boot();
-	scheduler_timer_delay(FAN_DRIVER_BOOT_DELAY_MS);
-	t_zero_ms = scheduler_timer_get_timestamp();
+	temp_update_t_0_ms = scheduler_timestamp_capture();
+	speed_update_t_0_ms = scheduler_timestamp_capture();
+	display_update_t_0_ms = scheduler_timestamp_capture();
+	fan_driver_controller_boot();
+	fan_boot_t_0_ms = scheduler_timestamp_capture();
 	
 	while(1) {
-		bme_error_code = bme280_temp_read(&temp_c_x10);
-	
-		if (bme_error_code != BME_ERR_OK) {
-			fan_driver_stop();
-			return UI_ERR_BME;
-		}
-				
-		fan_curve_error_code = fan_curve_get_speed((uint16_t) temp_c_x10, &target_speed_rpm);
-	
-		if (fan_curve_error_code != FAN_CURVE_ERR_OK) {
-			fan_driver_stop();
-			return UI_ERR_FAN_CURVE;
-		}
 		
-		if (scheduler_timer_poll(&t_zero_ms, FAN_DRIVER_UPDATE_TIME_MS)) {
-			fan_driver_error_code = fan_driver_update(target_speed_rpm, &measured_speed_rpm);
+		if (scheduler_timer_elapsed(temp_update_t_0_ms, BME280_TEMP_UPDATE_TIME_MS)) {
+			bme_error_code = bme280_temp_capture(&measured_temp_c_x10);
 			
-			if (fan_driver_error_code != FAN_DRIVER_ERR_OK) {
-				fan_driver_stop();
-				return UI_ERR_FAN_DRIVER;
+			if (bme_error_code != BME_ERR_OK) {
+				bme280_stop();
+				fan_driver_controller_stop();
+				return UI_ERR_BME;
+			}
+				
+			fan_curve_error_code = fan_curve_target_speed_compute((uint16_t) measured_temp_c_x10, &target_speed_rpm);
+				
+			if (fan_curve_error_code != FAN_CURVE_ERR_OK) {
+				bme280_stop();
+				fan_driver_controller_stop();
+				return UI_ERR_FAN_CURVE;
 			}
 			
-			t_zero_ms = scheduler_timer_get_timestamp();
+			temp_update_t_0_ms = scheduler_timestamp_capture();
 		}
 		
-		display_error_code = display_temp_write((uint16_t) temp_c_x10);
-	
-		if (display_error_code != DISPLAY_ERR_OK) {
-			fan_driver_stop();
-			return UI_ERR_DISPLAY;
+		if (!fan_boot_flag) {
+			
+			if (scheduler_timer_elapsed(fan_boot_t_0_ms, FAN_DRIVER_BOOT_DELAY_MS)) {
+				fan_boot_flag = 1;
+			}
 		}
 		
-		display_error_code = display_speed_write(measured_speed_rpm);
-	
-		if (display_error_code != DISPLAY_ERR_OK) {
-			fan_driver_stop();
-			return UI_ERR_DISPLAY;
+		else {
+		
+			if (scheduler_timer_elapsed(speed_update_t_0_ms, FAN_DRIVER_SPEED_UPDATE_TIME_MS)) {
+				fan_driver_error_code = fan_driver_speed_measure(&measured_speed_rpm);
+					
+				if (fan_driver_error_code != FAN_DRIVER_ERR_OK) {
+					bme280_stop();
+					fan_driver_controller_stop();
+					return UI_ERR_FAN_DRIVER;
+				}
+				
+				speed_update_t_0_ms = scheduler_timestamp_capture();
+			}
+		
+			fan_driver_controller_update(target_speed_rpm);
+		}
+		
+		if (scheduler_timer_elapsed(display_update_t_0_ms, DISPLAY_UPDATE_TIME_MS)) {
+		
+			display_error_code = display_temp_write((uint16_t) measured_temp_c_x10);
+		
+			if (display_error_code != DISPLAY_ERR_OK) {
+				bme280_stop();
+				fan_driver_controller_stop();
+				return UI_ERR_DISPLAY;
+			}
+			
+			display_error_code = display_speed_write(measured_speed_rpm);
+		
+			if (display_error_code != DISPLAY_ERR_OK) {
+				bme280_stop();
+				fan_driver_controller_stop();
+				return UI_ERR_DISPLAY;
+			}
+			
+			display_update_t_0_ms = scheduler_timestamp_capture();
 		}
 			
-		if (ui_rate_state()) {
-			scheduler_timer_delay(BUTTONS_DEBOUNCE_TIME_MS);
-			fan_driver_stop();
+		if (rate_pin_state()) {
+			scheduler_timer_delay(UI_BUTTONS_DEBOUNCE_TIME_MS);
+			bme_error_code = bme280_stop();
+			fan_driver_controller_stop();
+			
+			if (bme_error_code != BME_ERR_OK) {
+				return UI_ERR_BME;
+			}
+			
 			break;
 		}
 	}

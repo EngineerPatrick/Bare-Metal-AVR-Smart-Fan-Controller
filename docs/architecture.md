@@ -2,7 +2,7 @@
 
 ## Modules Overview
 
-```
+```text
 app/
     UI logic and runtime loop
 
@@ -30,7 +30,7 @@ tools/
 
 ## Repository Structure
 
-```
+```text
 project/
 │
 ├── app/
@@ -65,16 +65,16 @@ project/
 ├── drivers/
 │   │
 │   ├── bme280/
-│   │   ├── bme_280.c
-│   │   └── bme_280.h
+│   │   ├── bme280.c
+│   │   └── bme280.h
 │   │
 │   ├── fan_driver/
 │   │   ├── fan_driver.c
 │   │   └── fan_driver.h
 │   │
 │   ├── ssd1306/
-│   │   ├── ssd_1306.c
-│   │   └── ssd_1306.h
+│   │   ├── ssd1306.c
+│   │   └── ssd1306.h
 │   │
 │   └── twi/
 │       ├── twi.c
@@ -99,8 +99,13 @@ project/
 │       └── scheduler.h
 │
 ├── tools/
-│   ├── 8x8_bin_to_hex.c
-│   └── hex_to_8x8_bin.c
+│   │
+│   ├── speed_test/
+│   │   └── main.c
+│   │
+│   └── pattern_bitmaps/
+│       ├── 8x8_bin_to_hex.c
+│       └── hex_to_8x8_bin.c
 │
 ├── LICENSE
 ├── Makefile
@@ -111,7 +116,7 @@ project/
 
 The firmware is divided into four main layers and the dependency direction goes downward:
 
-```
+```text
 Application Layer
         ↓
 Service Layer
@@ -123,7 +128,7 @@ MCU Registers / External Hardware
 
 For example:
 
-```
+```text
 ui.c
 └── display.c
     └── ssd_1306.c
@@ -142,13 +147,14 @@ ui.c
 Responsibilities:
 
 - Initializes and stops the system scheduler
+- Activates the global interrupt flag
 - Starts the configuration phase
 - Advances to the runtime loop
 - In case of error calls the fault manager and blocks the system
 
 Dependency:
 
-```
+```text
 main.c -> ui.c/scheduler.c/fault_manager.c
 ```
 
@@ -158,15 +164,19 @@ This module owns the application main functions.
 
 Responsibilities:
 
-- Performs the 10 nodes fan-curve configuration and storage in EEPROM
-- Coordinates real-time sensor-actuator operations in the runtime loop
-- Manages the GPIO and input devices integrating 250 ms software-debounce
-- Controls the display by calling the display service API
+- Handles the UI using the display service, 3 buttons and 1 rotary encoder
+- Manages the GPIO integrating 250 ms software-debounce
+- Performs up to 10 nodes fan-curve configuration and storage in EEPROM
+- Boots the fan at 50% duty-cycle for 1500 ms to overcome inertia before checking for missing tachometer readings
+- Reads the temperature from the BME280 every 20 ms and uses it to obtain the target speed
+- Reads the fan speed every 300 ms
+- Updates the PWM duty-cycle with the new target speed or to use the feedback controller
+- Updates the display every 35 ms to show the real-time temperature and speed readings
 
 Dependency:
 
-```
-ui.c -> display.c/scheduler.c/fan_curve.c/fan_driver.c/bme280.c
+```text
+ui.c -> GPIO registers/display.c/scheduler.c/fan_curve.c/bme280.c/fan_driver.c
 ```
 
 ### `fault_manager`
@@ -176,14 +186,15 @@ This module owns the system faults reporting.
 Responsibilities:
 
 - Centralizes system-wide error handling
-- Reports faults on the display showing "Err x"
-- Lights up fault-LEDs
-- Generates a tone with the buzzer
+- Reports 4 faults each for a different device
+- Uses the display to show "Err x" for each fault
+- Lights up a different LED or the buzzer for each fault
+- Generates a 500 Hz tone with the buzzer for fan related faults
 
 Dependency:
 
-```
-fault_manager.c -> display.c/scheduler.c
+```text
+fault_manager.c -> GPIO registers/display.c/scheduler.c
 ```
 
 ---
@@ -196,30 +207,30 @@ This module owns a high-level interface to control the display.
 
 Responsibilities:
 
-- Contains the character-bitmaps stored in 32 kB Flash
-- Writes predefined words
+- Stores the pattern bitmaps for 25 8x8-pixel characters in 32 kB Flash
+- Writes 8 predefined words
 - Writes temperature and speed values
-- Handles blinking for words and digits
+- Handles 400 ms blinking for words and digits
 
 Dependency:
 
-```
+```text
 display.c -> ssd1306.c/scheduler.c
 ```
 
 ### `fan_curve`
 
-This module owns the management of the temp/speed values.
+This module owns the management of the 10 fan-curve nodes.
 
 Responsibilities:
 
-- Stores and loads fan-curve nodes in EEPROM
-- Validates fan-curve data using CRC
-- Calculates the target speed using linear interpolation
+- Stores and loads 10 fan-curve nodes in EEPROM
+- Validates fan-curve data using CRC-16
+- Calculates the target speed using linear interpolation and exposes it
 
 Dependency:
 
-```
+```text
 fan_curve.c -> crc.c
 ```
 
@@ -229,9 +240,10 @@ This module owns the tools for system timing.
 
 Responsibilities:
 
-- Configures Timer0 for 1 ms overflow
-- Keeps a millisecond timestamp
-- Provides non-blocking polling and blocking delaying
+- Configures Timer0 to generate 1 ms ticks
+- Keeps a timestamp in milliseconds
+- Provides non-blocking polling to check the amount of passed time
+- Provides blocking delaying
 
 Interrupts:
 
@@ -239,7 +251,7 @@ Owns the Timer0 compare match interrupt to measure 1 ms.
 
 Dependency:
 
-```
+```text
 scheduler.c -> Timer registers
 ```
 
@@ -249,9 +261,7 @@ This module owns CRC-16 calculation for data validation.
 
 Responsibilities:
 
-- Computes CRC over byte arrays
-
-This is a pure logic module with no dependencies.
+- Computes CRC-16 over byte arrays
 
 ---
 
@@ -263,18 +273,18 @@ This module owns the ATmega328P TWI/I2C driver.
 
 Responsibilities:
 
-- Configures and starts the TWI state-machine
+- Configures 7 states of the TWI state-machine and boots it
 - Performs 100 kHz I2C communications
 - Transmits and receives data from/to external buffers
-- Reports TWI-based errors and integrates a 400 ms hardware timeout
+- Reports TWI-based errors and integrates a 30 ms hardware timeout
 
 Interrupts:
 
-Owns the TWI interrupt used to advance the state-machine.
+Owns the TWI interrupt used to automatically advance the state-machine.
 
 Dependency:
 
-```
+```text
 twi.c -> TWI registers/scheduler.c
 ```
 
@@ -284,15 +294,14 @@ This module owns the BME280 sensor driver.
 
 Responsibilities:
 
-- Contains the commands sequence stored in 32 kB Flash
+- Stores the commands sequences in 32 kB Flash
 - Configures the sensor for temperature live readings
-- Reads calibration parameters and uses them for ADC value compensation
+- Loads calibration parameters and uses them for temperature compensation
 - Exposes temperature values in tenth of Celsius degrees
-- Reads the chip ID for testing purposes
 
 Dependency:
 
-```
+```text
 bme280.c -> BME280 registers/twi.c
 ```
 
@@ -302,28 +311,31 @@ This module owns the SSD1306 display driver.
 
 Responsibilities:
 
-- Contains the commands sequence stored in 32 kB Flash
+- Stores the commands sequences in 32 kB Flash
 - Configures the SSD1306 in horizontal addressing mode
-- Sends display data and clears the display
-- Writes 8x8 characters on a 8x16 grid
+- Writes 8x8-pixel patterns on an 8x16 grid
+- Resets and turns on the display
 
 Dependency:
 
-```
-ssd_1306.c -> SSD1306 registers/twi.c
+```text
+ssd1306.c -> SSD1306 registers/twi.c
 ```
 
 ### `fan_driver`
 
-This module owns the PWM generation and tachometer feedback.
+This module owns the PWM generation and the feedback controller.
 
 Responsibilities:
 
 - Configures Timer2 to generate a 25 kHz PWM
-- Uses speed hysteresis to smooth responsiveness
-- Measures tachometer pulses to compute the speed
-- Adjusts the duty-cycle with a finite number of steps
-- Detects missing tachometer input with a 400 ms hardware timeout
+- Reads tachometer pulses using Timer1 input capture to measure the speed
+- Detects missing tachometer readings
+- Uses the noise canceler and an estimated acceleration to filter the measured speed
+- Calculates the speed hysteresis assuming a linear model and uses it to smooth responsiveness to new targets
+- Updates the duty-cycle with a new target speed by estimating a duty-cycle assuming a linear model
+- Waits for the measured speed to stabilize in a range of 5 RPM for at least 2 s
+- Adjusts the duty-cycle with a finite number of steps by measuring the speed error after each duty-cycle update
 
 Interrupts:
 
@@ -331,7 +343,7 @@ Owns the Timer1 input capture and overflow interrupts to measure tachometer puls
 
 Dependency:
 
-```
+```text
 fan_driver.c -> Timer registers/scheduler.c
 ```
 
@@ -369,36 +381,50 @@ Example pin_map.h:
 Responsibilities:
 
 - Define TWI configuration
-- Define standard option temp values
-- Define timing values
-- define display positions
-- define temperature limits
+- Define standard option temperature values
+- Define display positions
+- Define temperature and speed limits
+- Define fan related measured values
+- Define all timing values
 
-Configuration values are modifiable for development purposes.
+Configuration values are modifiable for development purposes, and a specific error will be
+generated at compile-time for each incorrect value.
 
 ---
 
 ## Main Runtime Flow
 
-The firmware follows this high-level runtime loop:
+At startup the firmware enters the fan-curve configuration phase:
 
-```
-1. Perform temperature live readings
-2. Computes the target speed
-3. Updates the PWM duty-cycle
-4. Adjusts the duty-cycle using tachometer feedback
-5. Displays measured temp/speed values
-6. Checks for user input
+```text
+1. Shows the standard and the advanced mode selection
+2. Checks for user input to toggle or confirm the selected mode
+3. Shows the first node with the corrisponding temperature and speed
+3. Checks for user input to increase/decrease or change the selected digit
+4. Checks for user input to move to the next node or confirm the fan-curve
+5. Updates EEPROM with the new fan-curve
 ```
 
-Simplified call flow:
+Once the fan-curve is correctly uploaded in EEPROM, the firmware follows this high-level runtime loop:
 
+```text
+1. Performs temperature live readings
+2. Computes the target speed for the new temperature
+3. Updates the PWM duty-cycle with the new target speed
+4. Adjusts the duty-cycle using the feedback controller
+5. Displays the measured temperature and speed values
+6. Checks for user input to go back to the fan-curve configuration phase
 ```
-ui_system_update()
-├── bme_280_temp_read()
-├── fan_curve_get_speed()
-├── fan_driver_update()
-│   └── fan_driver_tach()
+
+Simplified call flow for the runtime loop:
+
+```c
+ui_system_runtime_loop()
+├── bme280_temp_capture()
+├── fan_curve_target_speed_compute()
+├── fan_driver_speed_measure()
+├── fan_driver_controller_update()
+│   └── feedback_control()
 ├── display_temp_write()
 └── display_speed_write()
 ```
@@ -429,7 +455,7 @@ All modules return enum-based centralized error codes that propagates to the top
 
 Example pattern:
 
-```
+```text
 TWI driver error -> display service error -> UI error -> top-level flow
 ```
 
@@ -439,7 +465,7 @@ Error categories:
 
 - Parameter errors
 - Hardware timeout errors
-- Communication errors
+- I2C communication errors
 - EEPROM/CRC errors
 
 ---
@@ -453,5 +479,5 @@ Possible architecture improvements:
 - Add a dedicated `post` service for power-on self-test
 - Add a dedicated `watchdog` service for reset recovery
 - Add a clearer safe-mode policy after repeated watchdog resets
-- Add host-side unit tests for CRC and fan-curve interpolation
+- Add host-side unit tests for CRC-16 and fan-curve interpolation
 - Add a logging service if SD-card support is added

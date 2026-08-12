@@ -68,82 +68,239 @@ measurement `temp_c` as input:
 dx = (loaded_curve.nodes[i + 1].temp_c - loaded_curve.nodes[i].temp_c);
 dy = (loaded_curve.nodes[i + 1].speed_rpm - loaded_curve.nodes[i].speed_rpm);
 dT = (temp_c - loaded_curve.nodes[i].temp_c);
-speed_rpm = loaded_curve.nodes[i].speed_rpm + (uint16_t) ((dT * dy) / dx);
+speed_rpm = loaded_curve.nodes[i].speed_rpm + ((dT * dy) / dx);
 ```
 
 ---
 
 ## Fan Driving
 
-The fan is driven by `fan_driver`, which receives an updated target speed every 80 ms and performs PWM and feedback operations.
+The fan is driven by `fan_driver`, which receives an updated target speed and performs PWM and feedback operations.
 
 ### Boot Delay
 
-The fan is started at 50% duty-cycle for 1 s to overcome the initial inertia before using the tachometer hardware timeout,
-which may not receive a reading in time during boot.
+The fan is started at 50% duty-cycle for 1500 ms to overcome the initial inertia before checking for missed tachometer readings,
+which may not be received in time during boot.
 
-This could be due to a low power supply or a fan with high inertia, and would require the hardware timeout interval to be changed only for this reason.
+This could be due to a low power supply or a fan with high inertia, and would require the hardware timeout interval to be increased
+only for this reason.
+
+### Speed Measurement
+
+The current speed is measured integrating the tachometer feedback, which is captured by using the input capture unit.
+
+In the runtime loop `fan_driver_speed_measure` is called every 300 ms to compute and save the current speed.
+
+#### Tachometer Non-Blocking Hardware Timeout
+
+First, a `response_flag` that only the ISR can set is checked to verify that there has been at least one tachometer reading before calling
+`fan_driver_speed_measure`. Then, the current speed is measured from the last captured reading by using the 2 pulses per revolution convention:
+
+```c
+captured_speed_rpm = US_PER_MINUTE / (interval_us * TACH_PULSES_PER_REV);
+```
+
+and if it is smaller than 90% of the minimum speed previously measured by using `fan_driver_speed_test`, then it is not saved and a tachometer timeout
+error is returned.
+
+If the captured speed is bigger than 90% of the measured minimum, then the function proceeds to filter it, and at the end clears the `response_flag`.
+
+This design guarantees a non-blocking tachometer timeout by exploiting the previously measured speed and the `response_flag` global variable.
+
+#### Software and Hardware Speed Filtering
+
+If the tachometer reading is valid, the captured speed is clamped within valid boundaries by `speed_filter` using an estimated acceleration:
+
+```c
+#define ACCELERATION_PER_READING_RPM_MS2 ((150UL * SPEED_RANGE_RPM * FAN_DRIVER_SPEED_UPDATE_TIME_MS) / FAN_DRIVER_MAX_SPEED_UPDATE_DELAY_MS) / 100
+```
+
+where `SPEED_RANGE_RPM` is the difference between the maximum and minimum speed measured with `fan_driver_speed_test`,
+and `FAN_DRIVER_MAX_SPEED_UPDATE_DELAY_MS` is the maximum delay to update the speed from the limit measured values. 
+
+This delay should be measured by using `fan_driver_update_delay_test` for both the update from minimum to maximum and the update from
+maximum to minimum speed, then the highest of the two values should be used to maximize speed filtering.
+
+The 150% of the value is considered to account for discarded decimals.
+
+If this is the first capture, the captured speed is saved unfiltered, otherwise is filtered to reduce tachometer noise:
+
+```c
+if (!P12MAX_controller.measured_speed_rpm) {
+	P12MAX_controller.measured_speed_rpm = captured_speed_rpm;
+	return;
+}
+
+if (captured_speed_rpm > P12MAX_controller.measured_speed_rpm + ACCELERATION_PER_READING_RPM_MS2) {
+	P12MAX_controller.measured_speed_rpm += (uint16_t) ACCELERATION_PER_READING_RPM_MS2;
+}
+	
+else if (captured_speed_rpm + ACCELERATION_PER_READING_RPM_MS2 < P12MAX_controller.measured_speed_rpm) {
+	P12MAX_controller.measured_speed_rpm -= (uint16_t) ACCELERATION_PER_READING_RPM_MS2;
+}
+	
+else {
+	P12MAX_controller.measured_speed_rpm = captured_speed_rpm;
+}
+```
+
+and the ATmega328P input noise canceler is activated to integrate an hardware noise reduction:
+
+```c
+TIM1_CTRL_REG_B = TIM1_RISING_EDGE_TRIGG | TIM1_INP_CAPT_NOISE_CANC;
+```
 
 ### Speed Hysteresis
 
-The speed hysteresis value is computed by `fan_driver_boot` and stored in `hysteresis_rpm` using parameters from `config`:
+The speed hysteresis value is computed by `fan_controller_init` assuming a linear model:
 
 ```c
-hysteresis_rpm = ((MIN_DC_REG_STEP * FAN_DRIVER_SPEED_RANGE * HYST_CORR_FACT_X1000 * 1000) / DC_REG_VALUE_RANGE) / 1000;
+P12MAX_controller.hysteresis_rpm = ((MIN_DC_REG_STEP * SPEED_RANGE_RPM * 103) / DC_REG_VALUE_RANGE) / 100;
 ```
 
-The speed variation for a single step of the duty-cycle register is estimated dividing the fan speed range by the total number
-of steps of the duty-cycle register, assuming a linear model.
+The speed variation for the minimum step of the duty-cycle register is estimated by dividing the fan speed range by the total number
+of steps of the duty-cycle register. The 103% of this value is computed to account for discarded decimals.
 
-The result is then multiplied by `HYST_CORR_FACT_X1000` to obtain the smallest speed variation accounting for rounded digits and a non-linear
-model, and by `MIN_DC_REG_STEP`, which represents the size of the change of the duty-cycle register for the smallest duty-cycle variation.
+The speed hysteresis is used in `fan_driver_controller_update` to decide whether or not the new target speed should be used to update
+the fan controller:
 
-This `hysteresis_rpm` value works as long as it is bigger than the biggest possible real speed variation due to the smallest duty-cycle variation:
-the real speed variation may increase when the duty-cycle decreases below a certain value, and may decrease or stabilize at a fixed value when the
-duty-cycle increases above a certain value, following a non-linear model.
+```c
+if (target_speed_rpm >= P12MAX_controller.target_speed_rpm) {
+	speed_variation_rpm = target_speed_rpm - P12MAX_controller.target_speed_rpm;
+}
+	
+else {
+	speed_variation_rpm = P12MAX_controller.target_speed_rpm - target_speed_rpm;
+}
 
-For the used fan (Arctic P12 MAX) this is exactly the case, as shown on the RPM/PWM non-linear chart reported on the manufacturer website.
+if (speed_variation_rpm >= P12MAX_controller.hysteresis_rpm) {
+	P12MAX_controller.target_speed_rpm = target_speed_rpm;
+```
+
+and if the new target speed is used, the duty-cycle is updated to an estimated value assuming again a linear model:
+
+```c
+	ds = P12MAX_controller.target_speed_rpm - FAN_DRIVER_MIN_SPEED_RPM;
+	dy = DC_REG_VALUE_RANGE;
+	dx = SPEED_RANGE_RPM;
+	q = FAN_DRIVER_MIN_DC_REG_VALUE;
+	TIM2_DUTY_CYCLE_REG = ((( ds * dy * 1000) / dx) + (q * 1000)) / 1000;
+```
 
 ### Feedback Controller
 
-When `fan_driver` receives a new target speed `fan_driver_update` calculates the difference between that and the preceding target speed.
+If `fan_driver_controller_update` is called with a new target speed lying within the hysteresis range, the duty-cycle is updated by implementing a
+feedback controller.
 
-If the difference is bigger than `hysteresis_rpm` the new target speed is stored in `target_speed_rpm` and the duty-cycle is updated to
-an initial estimate assuming a linear model:
+#### Response Stability Check
 
-```c
-TIM2_DUTY_CYCLE_REG = ((((target_speed_rpm - FAN_DRIVER_MIN_SPEED_RPM) * DC_REG_VALUE_RANGE * 1000) / FAN_DRIVER_SPEED_RANGE) / 1000) + MIN_DC_REG_VALUE;
-```
-
-if after 80 ms `fan_driver` receives the same target speed, `fan_driver_update` calls `fan_driver_tach` to adjust the duty-cycle using the
-tachometer feedback.
-
-First, an atomic operation is used to change the `response_received` flag, which gets set to 1 by the ISR every time a tachometer reading is received.
-
-Then, in a 400 ms loop an atomic operation is used again to check the `response_received` flag, and if it is 1 the loop stops.
-
-Finally, an atomic operation is used again to check the `response_received` flag again, so if it is 0 an error is returned, an if it is 1 the tachometer
-time interval in microseconds between pulses is stored.
-
-At this point, the time interval between pulses is used to compute the speed in RPM using the convention of 2 pulses per revolution:
+First, `feedback_control` saves the current timestamp and measured speed, then it raises the `first_step_flag` which is then cleared every
+time a new target speed is accepted:
 
 ```c
-measured_speed_rpm = ((1000000 * 60) / (tach_us * TACH_PULSES_PER_REV));
+if (!P12MAX_controller.feedback.state.first_step_flag) {
+	P12MAX_controller.feedback.reference_speed_rpm = P12MAX_controller.measured_speed_rpm;
+	P12MAX_controller.feedback.stability_t_0_ms = scheduler_timestamp_capture();
+	P12MAX_controller.feedback.state.first_step_flag = 1;
+}
 ```
 
-and the duty-cycle register is changed of `MIN_DC_REG_STEP` if this change would not break the valid boundaries, if would not bring the duty-cycle
-register back to its preceding value, and if `measured_speed_rpm` deviates more than `hysteresis_rpm` from the target speed.
+then, on the same call, `feedback_control` checks whether the current measured speed lies within 5 RPM from the last one for
+a minimum stability time period, which is measured from the last timestamp capture:
 
-After 80 ms, if the target speed is unchanged, this process is repeated until one of these 3 conditions changes, limiting the possible number of steps.
+```c
+if (!scheduler_timer_elapsed(P12MAX_controller.feedback.stability_t_0_ms, FAN_DRIVER_SPEED_STABILITY_TIME_MS)) {
+		
+	if (P12MAX_controller.measured_speed_rpm > P12MAX_controller.feedback.reference_speed_rpm + MAX_STABILITY_DEVIATION_RPM) {
+		P12MAX_controller.feedback.reference_speed_rpm = P12MAX_controller.measured_speed_rpm;
+		P12MAX_controller.feedback.stability_t_0_ms = scheduler_timestamp_capture();
+		return;
+	}
+		
+	if (P12MAX_controller.measured_speed_rpm + MAX_STABILITY_DEVIATION_RPM < P12MAX_controller.feedback.reference_speed_rpm) {
+		P12MAX_controller.feedback.reference_speed_rpm = P12MAX_controller.measured_speed_rpm;
+		P12MAX_controller.feedback.stability_t_0_ms = scheduler_timestamp_capture();
+		return;
+	}
+		
+	return;
+}
+```
 
-The main limitation is that by keeping fixed the value of `hysteresis_rpm` so that it is bigger than the biggest real speed variation,
-which happens at low duty-cycle values, when the target speed and the duty-cycle are high the maximum error increases: the smallest variation of the
-duty-cycle would result in a small speed variation, therefore a small improvement in the approximation, but that could be enough to enter
-the hysteresis range and stop the approximation process.
+if it is not, then the current timestamp is captured to reset the stability time, and the current measured speed is saved as a reference to check
+the next measured speed in the next call of `fan_driver_controller_update`.
+
+If the current measured speed lies within 5 RPM from the last saved reference the function returns, and if `fan_driver_controller_update` is called
+after the stability time period has elapsed, the feedback controller advances by using that reference as the stable response.
+
+#### Error Minimization Speed Adjustment
+
+The feedback controller is based on the minimization of the speed delta between the saved target speed and the last stable measured speed.
+
+First, the previous speed delta is saved and the new one is computed:
+
+```c
+P12MAX_controller.feedback.prev_speed_delta_rpm = P12MAX_controller.feedback.speed_delta_rpm;
+	
+if (P12MAX_controller.target_speed_rpm > P12MAX_controller.feedback.reference_speed_rpm) {
+	P12MAX_controller.feedback.speed_delta_rpm = P12MAX_controller.target_speed_rpm - P12MAX_controller.feedback.reference_speed_rpm;
+}
+	
+else {
+	P12MAX_controller.feedback.speed_delta_rpm = P12MAX_controller.feedback.reference_speed_rpm - P12MAX_controller.target_speed_rpm;
+}
+```
+
+then, if the last duty-cycle update resulted in a bigger speed delta with respect to the previous one, the `last_step_flag` is raised, which
+prevents `feedback_control` to be called again, and the next feedback step reverts the last one, bringing the speed delta to its minimum value:
+
+```c
+if (P12MAX_controller.feedback.speed_delta_rpm > P12MAX_controller.feedback.prev_speed_delta_rpm && P12MAX_controller.feedback.prev_speed_delta_rpm > 0) {
+	P12MAX_controller.feedback.state.last_step_flag = 1;
+	P12MAX_controller.feedback.state.first_step_flag = 0;
+}
+```
+
+The duty-cycle is updated in every feedback step by safely checking the duty-cycle register boundaries, and the stability time period is reset:
+
+```c
+if (P12MAX_controller.feedback.reference_speed_rpm < P12MAX_controller.target_speed_rpm) {		
+		
+	if (TIM2_DUTY_CYCLE_REG + MIN_DC_REG_STEP <= TOP_DC_REG_VALUE) {
+		TIM2_DUTY_CYCLE_REG += MIN_DC_REG_STEP;
+		P12MAX_controller.feedback.stability_t_0_ms = scheduler_timestamp_capture();
+	}
+}
+	
+else if (P12MAX_controller.feedback.reference_speed_rpm > P12MAX_controller.target_speed_rpm) {
+	
+	if (TIM2_DUTY_CYCLE_REG - FAN_DRIVER_MIN_DC_REG_VALUE >= MIN_DC_REG_STEP) {
+		TIM2_DUTY_CYCLE_REG = (uint8_t) (TIM2_DUTY_CYCLE_REG - MIN_DC_REG_STEP);
+		P12MAX_controller.feedback.stability_t_0_ms = scheduler_timestamp_capture();
+	}
+}
+```
+
+finally, if a new target speed is accepted all the flags and deltas are cleared:
+
+```c
+if (speed_variation_rpm >= P12MAX_controller.hysteresis_rpm) {
+		...
+		...
+		...
+		P12MAX_controller.feedback.speed_delta_rpm = 0;
+		P12MAX_controller.feedback.prev_speed_delta_rpm = 0;
+		P12MAX_controller.feedback.state.first_step_flag = 0;
+		P12MAX_controller.feedback.state.last_step_flag = 0;
+	}
+```
+
+This design ensures response stabilization to enforce validity of the value for the feedback, and accounts for the previous speed delta to minimize
+the error with the target speed.
 
 ### Choice of Timers
 
-As reported in the comments of `fan_driver`, for the used fan the smallest possible time interval between pulses is:
+As reported in the comments of `fan_driver`, for the used fan the smallest and biggest possible time intervals between pulses are:
 
 ```
 MIN - MAX SPEED = 400 RPM - 3300 RPM
@@ -152,11 +309,19 @@ MIN - MAX SPEED = 400 RPM - 3300 RPM
 
 3299 RPM - 3300 RPM time between pulses = 9.093665 ms - 9.090909 ms
 	
-*Required resolution*
+*Required sensitivity*
 Smallest change of time between pulses = 2.756 us
+
+400 RPM pulses/s = 13.33 Hz
+
+400 RPM time between pulses = 75 ms
+
+*Required resolution*
+Biggest time between pulses = 75 ms
 ```
 
-The ATmega328P provides Timer1, which is a 16-bit timer resulting in a perfect resolution for this task:
+The ATmega328P provides Timer1, which is a 16-bit timer resulting in a perfect sensitivity for this task.
+The resolution is extended by using an `uint8_t` variable as an overflow counter:
 
 ```
 f = (CPU Clock Frequency) / (prescaler)
@@ -165,12 +330,19 @@ prescaler register value -> prescaler values: 1 -> 1, 2 -> 8, 3 -> 64, 4 -> 256,
 
 For the Arduino UNO R3 the default CPU Clock Frequency = 16 MHz
 
-*Timer resolution*
+*Timer sensitivity*
 prescaler value = 8 -> MIN time between ticks = 500 ns
+
+Timer resolution = 500 ns * 65536 = 32.768 ms
+
+With an 8-bit overflow count variable the timer resolution can be extended to 256 overflows
+
+*Timer extended resolution*
+32.768 ms * 256 = 8388.608 ms
 ```
 
-Timer2 has been used in FastPWM mode for the PWM generation, since Timer1 and Timer0 where already employed for other tasks, and it is capable of
-producing a PWM signal having exactly the required frequency of 25 kHz (outside the human audible band):
+Timer2 has been used in FastPWM mode for the PWM generation, since Timer1 and Timer0 where already employed for other tasks,
+and it is capable of producing a PWM signal having exactly the required frequency of 25 kHz (outside the human audible band):
 
 ```
 f = (CPU Clock Frequency) / (prescaler * (1 + top))
@@ -181,6 +353,6 @@ prescaler register value -> prescaler value: 1 -> 1, 2 -> 8, 3 -> 32, 4 -> 64, 5
 
 For the Arduino UNO R3 the default CPU Clock Frequency = 16 MHz
 
-*Frequency*
+*PWM frequency*
 prescaler value = 8, top value = 79 -> 25 kHz
 ```

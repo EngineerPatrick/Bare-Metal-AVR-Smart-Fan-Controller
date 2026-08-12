@@ -1,0 +1,17 @@
+79 2095 RPM
+79 2089 RPM
+79 2074 RPM
+
+2 288 RPM
+2 290 RPM
+2 290 RPM
+
+from 2 to 79 duty-cycle reg - MIN speed 300:
+10140 ms
+9880 ms
+9920 ms
+
+from 79 to 2 duty-cycle reg - MAX speed 2000:
+8840 ms
+8010 ms
+7950 ms

@@ -9,7 +9,7 @@ The target board is an Arduino Uno R3 based on the ATmega328P. The firmware uses
 - 1 4-wire PWM fan
 - 3 push buttons
 - 1 rotary encoder
-- 2 fault LEDs
+- 3 fault LEDs
 - 1 buzzer
 
 ## Board/Pin Map
@@ -62,7 +62,7 @@ The 4.7 kΩ external resistor is used to replace the board internal pull-up 20-5
 
 | Button Pin | Board Pin |
 | ---------- | --------- |
-| +V         | D5/D6/D7  |
+| Signal     | D5/D6/D7  |
 | GND        | GND       |
 
 ---
