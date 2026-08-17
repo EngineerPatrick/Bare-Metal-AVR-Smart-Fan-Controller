@@ -46,7 +46,8 @@ project/
 │   └── main.c
 │
 ├── assets/
-│   └── setup.jpg
+│   ├── setup.jpg
+│   └── setup2.jpg
 │
 ├── bsp/
 │   ├── board.h
@@ -60,6 +61,7 @@ project/
 │   ├── architecture.md
 │   ├── fan_control.md
 │   ├── memory_usage.md
+│   ├── twi_state-machine.md
 │   └── wiring.md
 │
 ├── drivers/
@@ -101,7 +103,8 @@ project/
 ├── tools/
 │   │
 │   ├── speed_test/
-│   │   └── main.c
+│   │   ├── main.c
+│   │   └── measurements.txt
 │   │
 │   └── pattern_bitmaps/
 │       ├── 8x8_bin_to_hex.c
