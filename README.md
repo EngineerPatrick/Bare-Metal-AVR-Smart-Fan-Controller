@@ -6,7 +6,7 @@
 
 ![Setup](assets/setup.jpg)
 
-[Watch the project demo video on LinkedIn](https://www.linkedin.com/feed/update/urn:li:activity:7471161384559448064/)
+[Watch the project demo video on LinkedIn](https://www.linkedin.com/feed/update/urn:li:ugcPost:7495156350784704512/)
 
 Demonstration video showing the advanced configuration of the fan-curve, real-time sensor-actuator operations and missing battery fault handling.
 
@@ -33,7 +33,7 @@ with the BME280, the corresponding target speed is computed and the fan is drive
 
 - ATmega328P / Arduino Uno R3
 - BME280 I2C sensor
-- SSD1306 0.96" OLED display
+- SSD1306 0.96-inch OLED display
 - 4-wire PWM fan
 - 1 Rotary encoder
 - 3 Push buttons
@@ -78,6 +78,7 @@ make docs
 ## UI Manual
 
 The fan-curve can be configured only with constant or increasing speed values and increasing temperature values within the valid range.
+
 ```text
 1. At startup the display shows 2 options to configure the fan-curve:
 	- The standard option has 8 fixed temperature values and requires only the input of the speed
@@ -101,7 +102,7 @@ The fan-curve can be configured only with constant or increasing speed values an
 
 The README is also used as the Doxygen main page through:
 
-```
+```text
 USE_MDFILE_AS_MAINPAGE = README.md
 ```
 
