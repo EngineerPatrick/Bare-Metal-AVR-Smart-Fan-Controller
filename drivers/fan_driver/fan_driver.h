@@ -42,8 +42,8 @@ void fan_driver_controller_boot(void);
 *
 *	@retval	FAN_DRIVER_ERR_OK				If no error occurs
 *	@retval	FAN_DRIVER_ERR_TACH				If there is no tachometer reading before the last call
-*	@retval	FAN_DRIVER_ERR_PARAM 			If measured_speed_rpm == NULL
-*	@retval	FAN_DRIVER_ERR_PARAM 			If an internal error occurs which results in a division by 0 or in a variable overflow
+*	@retval	FAN_DRIVER_ERR_PARAM 				If measured_speed_rpm == NULL
+*	@retval	FAN_DRIVER_ERR_PARAM 				If an internal error occurs which results in a division by 0 or in a variable overflow
 *
 *	@pre 	measured_speed_rpm != NULL
 *	@pre 	The global interrupt must be activated by calling sei

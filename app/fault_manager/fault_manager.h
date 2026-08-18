@@ -27,9 +27,9 @@ typedef enum {
 *
 *	@param	ui_error_code					Error code from the UI module
 *
-*	@retval	FAULT_MANAGER_ERR_OK 			If no error occurs
-*	@retval	FAULT_MANAGER_ERR_PARAM			If ui_error_code > UI_ERR_FAN_DRIVER
-*	@retval	FAULT_MANAGER_ERR_DISPLAY		If an error with the display occurs
+*	@retval	FAULT_MANAGER_ERR_OK				If no error occurs
+*	@retval	FAULT_MANAGER_ERR_PARAM				If ui_error_code > UI_ERR_FAN_DRIVER
+*	@retval	FAULT_MANAGER_ERR_DISPLAY			If an error with the display occurs
 *
 *	@pre 	ui_error_code <= UI_ERR_FAN_DRIVER
 *	@pre 	The scheduler must be activated by calling scheduler_timer_boot

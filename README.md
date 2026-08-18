@@ -23,8 +23,9 @@ with the BME280, the corresponding target speed is computed and the fan is drive
 - Thread-safe interrupts with non-blocking ISR
 - Scheduler service for real-time sensor-actuator coordination
 - Aggressive error checks with error propagation
-- TWI/I2C driver with state machine
-- PWM fan driver with feedback controller
+- TWI/I2C driver with state-machine
+- Actuator output measurement with software and hardware filters
+- Feedback controller with response stability check and error minimization
 - EEPROM storage with CRC-16 validation
 - GPIO/display UI with software-debounce
 - Doxygen documentation for all APIs

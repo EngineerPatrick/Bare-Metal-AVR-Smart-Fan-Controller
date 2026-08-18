@@ -171,10 +171,10 @@ Responsibilities:
 - Manages the GPIO integrating 250 ms software-debounce
 - Performs up to 10 nodes fan-curve configuration and storage in EEPROM
 - Boots the fan at 50% duty-cycle for 1500 ms to overcome inertia before checking for missing tachometer readings
-- Reads the temperature from the BME280 every 20 ms and uses it to obtain the target speed
+- Reads the temperature from the BME280 every 10 ms and uses it to obtain the target speed
 - Reads the fan speed every 300 ms
 - Updates the PWM duty-cycle with the new target speed or to use the feedback controller
-- Updates the display every 35 ms to show the real-time temperature and speed readings
+- Updates the display every 30 ms to show the real-time temperature and speed readings
 
 Dependency:
 
@@ -279,7 +279,7 @@ Responsibilities:
 - Configures 7 states of the TWI state-machine and boots it
 - Performs 100 kHz I2C communications
 - Transmits and receives data from/to external buffers
-- Reports TWI-based errors and integrates a 30 ms hardware timeout
+- Reports TWI-based errors and integrates a 10 ms hardware timeout
 
 Interrupts:
 
@@ -338,7 +338,7 @@ Responsibilities:
 - Calculates the speed hysteresis assuming a linear model and uses it to smooth responsiveness to new targets
 - Updates the duty-cycle with a new target speed by estimating a duty-cycle assuming a linear model
 - Waits for the measured speed to stabilize in a range of 5 RPM for at least 2 s
-- Adjusts the duty-cycle with a finite number of steps by measuring the speed error after each duty-cycle update
+- Adjusts the duty-cycle with a finite number of steps by minimizing the speed error after each duty-cycle update
 
 Interrupts:
 

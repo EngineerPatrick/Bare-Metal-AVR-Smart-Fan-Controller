@@ -73,7 +73,7 @@
 /**DISPLAY*/
 /*
 *
-*		Position of every word and digit	 on the display
+*		Position of every word and digit on the display
 *
 *		-Every position must be set so that every character fits within an 8x16 grid
 *
@@ -166,15 +166,15 @@
 */
 #define FAN_DRIVER_MIN_DC_REG_VALUE 2U
 /*
-*	
-*	  	Approximate MIN-MAX fan speed values calculated from the tachometer 	pulses measured using the input capture feature of Timer1
+*
+*	  	Approximate MIN-MAX fan speed values calculated from the tachometer pulses measured using the input capture feature of Timer1
 *
 *		-Should be measured by using fan_driver_speed_test
 *
 *		-Keep this range slightly tighter than the measured one
 *
 *		-The valid range is [200, 4000] and must be bigger than 1000
-*		
+*
 */
 #define FAN_DRIVER_MIN_SPEED_RPM 290U
 #define FAN_DRIVER_MAX_SPEED_RPM 2000U
@@ -236,13 +236,13 @@
 *
 *		Control logic to generate compile-time errors for incorrect values
 *
-*/	
+*/
 
 /*TWI*/
 #if (TWI_BITRATE_REG < 0 || TWI_BITRATE_REG > 255)
 
 	#error "The configured value for the bitrate register is out of range"
-	
+
 #elif (TWI_BITRATE_PRESCALER < 0 || TWI_BITRATE_PRESCALER > 3)
 
 	#error "The configured value for the bitrate prescaler register is out of range"
