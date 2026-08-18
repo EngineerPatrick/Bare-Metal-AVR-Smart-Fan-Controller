@@ -42,7 +42,7 @@ void scheduler_timer_stop(void);
 *
 *	@brief	Returns the timestamp of the current timer value.
 *
-*	@retval	0								If the timer has not been booted
+*	@retval	0						If the timer has not been booted
 *
 *	@post 	The current timer timestamp is returned
 *
@@ -53,12 +53,12 @@ uint16_t scheduler_timestamp_capture(void);
 *
 *	@brief	Polls the timer to check if it reached the target duration.
 *
-*	@param	target_duration_ms	 		   Target duration
-*	@param	t_0_ms						   Starting timestamp
+*	@param	target_duration_ms	 		   	Target duration
+*	@param	t_0_ms						Starting timestamp
 *
-*	@retval	0					 		   If the timer has not been booted
-*	@retval	0					 		   If the timer has not reached the target duration or if !target_duration_ms
-*	@retval	1					 		   If the timer has reached the target duration
+*	@retval	0					 	If the timer has not been booted
+*	@retval	0					 	If the timer has not reached the target duration or if !target_duration_ms
+*	@retval	1					 	If the timer has reached the target duration
 *
 *	@pre 	The scheduler and the global interrupt must be activated by calling scheduler_timer_boot and sei
 *	@pre    This function is being polled at a frequency higher than 16 mHz
@@ -74,7 +74,7 @@ uint8_t scheduler_timer_elapsed(uint16_t t_0_ms, uint16_t target_duration_ms);
 *
 *	@brief	Creates a blocking delay of a specific target duration.
 *
-*	@param	target_duration_ms	  		  Target duration
+*	@param	target_duration_ms	  		  	Target duration
 *
 *	@pre 	The scheduler and the global interrupt must be activated by calling scheduler_timer_boot and sei
 *	@post 	If sei has not been called the correct execution is not guaranteed

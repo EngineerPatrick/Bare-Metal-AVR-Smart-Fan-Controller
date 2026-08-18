@@ -20,7 +20,7 @@ The following configuration and formulas refer to the BME280 datasheet.
 
 The BME280 sensor is configured in `bme280` to perform continuous temperature measurements:
 
-```
+```text
 Humidity Oversampling Skipped
 Pressure Oversampling Skipped
 Temperature Oversampling x 16
@@ -302,7 +302,7 @@ the error with the target speed.
 
 As reported in the comments of `fan_driver`, for the used fan the smallest and biggest possible time intervals between pulses are:
 
-```
+```text
 MIN - MAX SPEED = 400 RPM - 3300 RPM
 
 3299 RPM - 3300 RPM pulses/s = 109.97 Hz - 110 Hz
@@ -323,7 +323,7 @@ Biggest time between pulses = 75 ms
 The ATmega328P provides Timer1, which is a 16-bit timer resulting in a perfect sensitivity for this task.
 The resolution is extended by using an `uint8_t` variable as an overflow counter:
 
-```
+```text
 f = (CPU Clock Frequency) / (prescaler)
 
 prescaler register value -> prescaler values: 1 -> 1, 2 -> 8, 3 -> 64, 4 -> 256, 5 -> 1024
@@ -344,7 +344,7 @@ With an 8-bit overflow count variable the timer resolution can be extended to 25
 Timer2 has been used in FastPWM mode for the PWM generation, since Timer1 and Timer0 where already employed for other tasks,
 and it is capable of producing a PWM signal having exactly the required frequency of 25 kHz (outside the human audible band):
 
-```
+```text
 f = (CPU Clock Frequency) / (prescaler * (1 + top))
 
 0 <= top value <= 255 (8-bit register)

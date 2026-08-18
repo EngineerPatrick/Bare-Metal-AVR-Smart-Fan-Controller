@@ -29,8 +29,8 @@ typedef enum {
 *
 *	@brief	Starts the UI to create a new fan curve and to save it in EEPROM.
 *
-*	@retval	UI_ERR_OK						If no error occurs
-*	@retval	UI_ERR_FAN_CURVE 				If an error with the fan_curve service occurs
+*	@retval	UI_ERR_OK					If no error occurs
+*	@retval	UI_ERR_FAN_CURVE				If an error with the fan_curve service occurs
 *	@retval	UI_ERR_DISPLAY					If an error with the display service occurs
 *
 *	@post 	If an error with the fan_curve service or the display service occurs the correct execution is not guaranteed
@@ -43,8 +43,8 @@ ui_errors ui_system_config(void);
 *
 *	@brief	Handles the system runtime loop.
 *
-*	@retval	UI_ERR_OK						If no error occurs
-*	@retval	UI_ERR_BME						If an error with the bme280 driver occurs
+*	@retval	UI_ERR_OK					If no error occurs
+*	@retval	UI_ERR_BME					If an error with the bme280 driver occurs
 *	@retval	UI_ERR_DISPLAY					If an error with the display service occurs
 *	@retval	UI_ERR_FAN_CURVE 				If an error with the fan_curve service occurs
 *	@retval	UI_ERR_FAN_DRIVER				If an error with the fan driver occurs

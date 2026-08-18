@@ -1,11 +1,11 @@
-MCU         := atmega328p
-PORT        := /dev/ttyUSB0
-PROGRAMMER  := arduino
-BAUD        := 115200
+MCU		:= atmega328p
+PORT		:= /dev/ttyUSB0
+PROGRAMMER	:= arduino
+BAUD		:= 115200
 
 CC   		:= avr-gcc
-OBJCOPY     := avr-objcopy
-SIZE        := avr-size
+OBJCOPY		:= avr-objcopy
+SIZE		:= avr-size
 CSTD 		:= -std=c11
 
 BLD_DIR		:= build
@@ -30,8 +30,8 @@ OBJS 		:= $(patsubst %.c, $(OBJ_DIR)/%.o, $(SRCS))
 
 DEPS 		:= $(patsubst $(OBJ_DIR)/%.o, $(OBJ_DIR)/%.d, $(OBJS))
 
-ELF         := $(BIN_DIR)/launcher.elf
-HEX         := $(BIN_DIR)/launcher.hex
+ELF		:= $(BIN_DIR)/launcher.elf
+HEX		:= $(BIN_DIR)/launcher.hex
 
 .PHONY: all flash clean docs
 
