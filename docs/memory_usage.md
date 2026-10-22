@@ -6,7 +6,7 @@ The firmware is designed to respect memory constraints in an embedded context. D
 
 The main memory resources are:
 
-```
+```text
 Flash:   32 KB
 SRAM:     2 KB
 EEPROM:   1 KB
@@ -17,7 +17,7 @@ EEPROM:   1 KB
 After building the firmware memory usage can be checked with:
 
 ```bash
-avr-size --mcu=atmega328p --format=avr build/launcher.elf
+avr-size --mcu=atmega328p --format=avr build/bin/launcher.elf
 ```
 
 or through the Makefile:
@@ -56,10 +56,10 @@ AVR Memory Usage
 ----------------
 Device: atmega328p
 
-Program:   10404 bytes (31.8% Full)
+Program:   10780 bytes (32.9% Full)
 (.text + .data + .bootloader)
 
-Data:        565 bytes (27.6% Full)
+Data:        577 bytes (28.2% Full)
 (.data + .bss + .noinit)
 
 EEPROM:       43 bytes (4.2% Full)
@@ -70,7 +70,7 @@ EEPROM:       43 bytes (4.2% Full)
 
 ## Memory API
 
-Avr-LibC 2.2.0 provides the API implemented to access EEPROM, Flash and to perform atomic operations.
+Avr-LibC 2.2.1 provides the API implemented to access EEPROM, Flash and to perform atomic operations.
 
 The version matters since newer versions provide different functions.
 
@@ -156,11 +156,11 @@ ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 
 ### `display`
 
-All the character-bitmaps are saved in arrays of 8 `uint8_t` to produce 8x8 characters, this results in an 8-byte structure created by
+All the pattern bitmaps are saved in arrays of 8 `uint8_t` to produce 8x8-pixel characters, this results in an 8-byte structure created by
 `display` and a 9-byte structure created by `ssd1306`, both stored on the stack.
 
-The dimensions of the characters are kept small on purpose to prevent SRAM overflow: if there was a buffer as large as the entire
-128x64 screen there would be a 1024-bytes structure created by `display` and a 1025-bytes structure created by `ssd1306`, which would overflow
+The dimensions of the patterns are kept small on purpose to prevent SRAM overflow: if there was a buffer as large as the entire 128x64 screen
+there would be a 1024-bytes structure created by `display` and a 1025-bytes structure created by `ssd1306`, which would overflow
 the 2 kB SRAM by themselves.
 
 All the patterns bitmaps are stored in the `Program` space:
@@ -169,8 +169,8 @@ All the patterns bitmaps are stored in the `Program` space:
 static const uint8_t A_PATTERN[CHAR_PATTERN_BYTES] PROGMEM = {0x60, 0x18, 0x16, 0x11, 0x16, 0x18, 0x60, 0x00};
 ```
 
-these are used by `display_pattern_write`, which takes a pointer to the first byte as a parameter (for example the letter-array name `A_PATTERN`),
-and iteratively uses `pgm_byte_read` to copy all the 8 bytes to an array on the stack.
+these are used by `char_write`, which takes a pointer to the first byte as a parameter (for example the letter-array name `A_PATTERN`),
+and iteratively uses `pgm_read_byte` to copy all the 8 bytes to an array on the stack.
 
 The order of the letters of each word is saved in word-arrays, that contain the names of each letter-array:
 
@@ -178,9 +178,9 @@ The order of the letters of each word is saved in word-arrays, that contain the 
 static const uint8_t* const SELECT[SELECT_WORD_LENGTH] PROGMEM = {S_PATTERN, E_PATTERN, L_PATTERN, E_PATTERN, C_PATTERN, T_PATTERN};
 ```
 
-these are used by `display_word_write`, which takes a pointer to the first letter-array name as a parameter (for example the word-array name `SELECT`),
+these are used by `word_write`, which takes a pointer to the first letter-array name as a parameter (for example the word-array name `SELECT`),
 iteratively uses it to load each letter-array name from Flash with `pgm_read_ptr_near` (the name of a letter-array is a pointer to its first byte),
-and to pass it as a parameter to `display_pattern_write`.
+and to pass it as a parameter to `char_write`.
 
 Similarly, the names of the 10 digit-arrays are saved in another array:
 
@@ -190,11 +190,11 @@ static const uint8_t* const DIGITS[10] PROGMEM = {ZERO_PATTERN, ONE_PATTERN, TWO
 
 where the index of any digit-array name is equal to the number represented by that digit-array. This is used by `display_temp_write`
 and `display_speed_write` to load the correct digit-array name from Flash with `pgm_read_ptr_near`, and to pass it as a parameter
-to `display_pattern_write`.
+to `char_write`.
 
 ### `bme280`/`ssd1306`
 
-The command sequences for both the BME280 and the SSD1306 programmable external peripherals are constants, therefore are stored in the `Program` space.
+The command sequences for both the BME280 and the SSD1306 external peripherals are constants, therefore are stored in the `Program` space.
 
 For the BME280:
 
@@ -208,34 +208,35 @@ For the SSD1306:
 static const uint8_t TURNON[TURNON_LENGTH] PROGMEM = {COMMAND_BYTE, CHARGE_PUMP_SETTING, COMMAND_BYTE, CHARGE_PUMP_ENABLE, ...};
 ```
 
-And both the modules copy all the bytes in arrays on the stack by iteratively using `pgm_byte_read` repeating the same logic
-of `display_pattern_write`.
+And both the modules copy all the bytes in arrays on the stack by iteratively using `pgm_read_byte` repeating the same logic
+of `char_write`.
 
 ## EEPROM Storage Usage
 
-The values of the fan-curve nodes are stored in EEPROM in `fan_curve`. Initially, a zero-curve is stored in EERPOM by using the `EEMEM` attribute:
+The values of the fan-curve nodes are stored in EEPROM in `fan_curve` by updating a structure declared with the `EEMEM` attribute:
 
 ```c
 static fan_curve ee_fan_curve EEMEM = {0};
 ```
 
-then `fan_curve_create` creates another `fan_curve` object on the stack, changes its values using the passed parameters and saves
+`fan_curve_eeprom_update` creates another `fan_curve` object on the stack, changes its values using the passed parameters and saves
 it in EEPROM by updating the existing block with `eeprom_update_block`.
 
 Finally, it loads it back, recalculates the CRC-16 and verifies it is the same as the stored one.
 
-The object on the stack gets deleted once `fan_curve_create` returns, but the EEPROM object persists and is used by `fan_curve_get_speed`,
-which creates another `fan_curve` object on the stack and copies on it the EEPROM `fan_curve` object with `eeprom_read_block`.
+The object on the stack gets deleted once `fan_curve_eeprom_update` returns, but the EEPROM object persists and is used by 
+`fan_curve_target_speed_compute`, which creates another `fan_curve` object on the stack and copies on it the EEPROM `fan_curve`
+object with `eeprom_read_block`.
 
 Before using the copied values, it calculates the CRC-16 and verifies it is the same as the stored one.
 
 ## SRAM Volatile Usage
 
-In `twi` the entire `twi_state_machine` object is declared `volatile`, and the flag `done` is read by using atomic operations to
+In `twi` multiple variables of the `twi_state_machine` object are declared `volatile`, and the flag `stop_sent` is read by using atomic operations to
 determine if the communication has finished.
 
-Similarly, in `fan_driver` the entire `pwm_params` object is declared `volatile`, and the `tach_us` variable representing the microseconds
-between tachometer pulses is read by using an atomic operation.
+Similarly, in `fan_driver` multiple variables of the `P12MAX_controller` object are declared `volatile`, and the variables of the `tachometer` object
+used to calculate the current speed are read by using an atomic operation.
 
-The system scheduler repeats the same logic in `scheduler`, where the `timer_params` object is declared `volatile` and the `current_ms` variable
-representing the current time-stamp in milliseconds is read by using an atomic operation.
+The system scheduler repeats the same logic in `scheduler`, where the `current_ms` variable of the `scheduler_controller` object, representing the
+current time-stamp in milliseconds, is declared `volatile`, and is read by using an atomic operation.
