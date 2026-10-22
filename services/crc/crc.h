@@ -17,12 +17,13 @@
 *
 *	@brief	Calculates the CRC16-CCITT of a given bytes sequence.
 *
-*	@param	length			    		Number of bytes
-*	@param	data						Address of the first byte
+*	@param	length			    				Number of bytes
+*	@param	data								Address of the first byte
 *
-*	@retval	0   						If data == NULL || !length
+*	@retval	0   								If data == NULL || !length
 *
-*	@pre 	data != NULL && length > 0
+*	@pre 	data != NULL
+*	@pre 	length > 0
 *	@post 	On success the correct CRC is calculated and returned
 *
 */
