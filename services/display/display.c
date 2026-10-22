@@ -29,21 +29,21 @@
 #define NODE_WORD_LENGTH 4U
 #define ERR_WORD_LENGTH 3U
 
-#define DISPLAY_MIN_INDEX 1U
-#define DISPLAY_MAX_INDEX 10U
+#define MIN_INDEX 1U
+#define MAX_INDEX 10U
 
 /*
 *
 *	The value format is in tenth of degrees Celsius : 12.3°C = 123
 *
 */
-#define DISPLAY_MIN_TEMP_C_X10 0U
-#define DISPLAY_MAX_TEMP_C_X10 999U
-#define DISPLAY_TEMP_DIGITS 3U
+#define MIN_TEMP_C_X10 0
+#define MAX_TEMP_C_X10 999U
+#define TEMP_DIGITS 3U
 
-#define DISPLAY_MIN_SPEED_RPM 0U
-#define DISPLAY_MAX_SPEED_RPM 9999U
-#define DISPLAY_SPEED_DIGITS 4U
+#define MIN_SPEED_RPM 0
+#define MAX_SPEED_RPM 9999U
+#define SPEED_DIGITS 4U
 
 /*
 *
@@ -463,7 +463,7 @@ static const uint8_t C_PATTERN[CHAR_PATTERN_BYTES] PROGMEM = {0x1C, 0x22, 0x41, 
 
  static const uint8_t* const ERR[ERR_WORD_LENGTH] PROGMEM = {E_PATTERN, R_PATTERN, R_PATTERN};
 
-static display_errors display_pattern_write(const uint8_t* pattern_add, uint8_t row, uint8_t column) {
+static display_errors char_write(const uint8_t* pattern_add, size_t row, size_t column) {
 	ssd_errors error_code = 0;
 	uint8_t pattern[CHAR_PATTERN_BYTES] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	
@@ -474,7 +474,7 @@ static display_errors display_pattern_write(const uint8_t* pattern_add, uint8_t 
 		}
 	}
 	
-	error_code = ssd1306_8x8char_write(pattern, row, column);
+	error_code = ssd1306_data_write(pattern, row, column);
 	
 	if (error_code != SSD_ERR_OK) {
 		return DISPLAY_ERR_SSD;
@@ -483,11 +483,11 @@ static display_errors display_pattern_write(const uint8_t* pattern_add, uint8_t 
 	return DISPLAY_ERR_OK;
 }
 
-static display_errors display_blank_write(uint8_t length, uint8_t row, uint8_t column) {
+static display_errors blank_write(size_t length, size_t row, size_t column) {
 	display_errors error_code = 0;
 	
-	for (uint8_t i = 0; i < length; i++) {
-		error_code = display_pattern_write(NULL, row, (column + i));
+	for (size_t i = 0; i < length; i++) {
+		error_code = char_write(NULL, row, (column + i));
 		
 		if (error_code != DISPLAY_ERR_OK) {
 			return error_code;
@@ -497,11 +497,11 @@ static display_errors display_blank_write(uint8_t length, uint8_t row, uint8_t c
 	return DISPLAY_ERR_OK;
 }
 
-static display_errors display_word_write(const uint8_t* const* word, uint8_t length, uint8_t row, uint8_t column) {
+static display_errors word_write(const uint8_t* const* word, size_t length, size_t row, size_t column) {
 	display_errors error_code = 0;
 	
-	for (uint8_t i = 0; i < length; i++) {
-		error_code = display_pattern_write(pgm_read_ptr_near(word + i), row, (column + i));
+	for (size_t i = 0; i < length; i++) {
+		error_code = char_write(pgm_read_ptr_near(word + i), row, (column + i));
 	
 		if (error_code != DISPLAY_ERR_OK) {
 			return error_code;
@@ -511,7 +511,7 @@ static display_errors display_word_write(const uint8_t* const* word, uint8_t len
 	return DISPLAY_ERR_OK;
 }
 
-static void display_digits_extract(uint16_t full_value, uint8_t* digits, uint8_t length) {
+static void digits_extract(uint16_t full_value, uint8_t* digits, size_t length) {
 	uint16_t divisor = 1;
 	
 	for (size_t i = 1; i < length; i++) {
@@ -534,19 +534,19 @@ display_errors display_intro_write(void) {
 		return DISPLAY_ERR_SSD;
 	}
 	
-	display_error_code = display_word_write(SELECT, SELECT_WORD_LENGTH, SELECT_WORD_ROW, SELECT_WORD_COLUMN);
+	display_error_code = word_write(SELECT, SELECT_WORD_LENGTH, DISPLAY_SELECT_WORD_ROW, DISPLAY_SELECT_WORD_COLUMN);
 	
 	if (display_error_code != DISPLAY_ERR_OK) {
 		return display_error_code;
 	}
 	
-	display_error_code = display_word_write(MODE, MODE_WORD_LENGTH, MODE_WORD_ROW, MODE_WORD_COLUMN);
+	display_error_code = word_write(MODE, MODE_WORD_LENGTH, DISPLAY_MODE_WORD_ROW, DISPLAY_MODE_WORD_COLUMN);
 	
 	if (display_error_code != DISPLAY_ERR_OK) {
 		return display_error_code;
 	}
 	
-	ssd_error_code = ssd1306_display_on();
+	ssd_error_code = ssd1306_screen_turn_on();
 	
 	if (ssd_error_code != SSD_ERR_OK) {
 		return DISPLAY_ERR_SSD;
@@ -555,50 +555,50 @@ display_errors display_intro_write(void) {
 	return DISPLAY_ERR_OK;
 }
 
-display_errors display_std_write(void) {
-	return display_word_write(STANDARD, STANDARD_WORD_LENGTH, STANDARD_WORD_ROW, STANDARD_WORD_COLUMN);
+display_errors display_standard_write(void) {
+	return word_write(STANDARD, STANDARD_WORD_LENGTH, DISPLAY_STANDARD_WORD_ROW, DISPLAY_STANDARD_WORD_COLUMN);
 }
 
-display_errors display_adv_write(void) {
-	return display_word_write(ADVANCED, ADVANCED_WORD_LENGTH, ADVANCED_WORD_ROW, ADVANCED_WORD_COLUMN);
+display_errors display_advanced_write(void) {
+	return word_write(ADVANCED, ADVANCED_WORD_LENGTH, DISPLAY_ADVANCED_WORD_ROW, DISPLAY_ADVANCED_WORD_COLUMN);
 }
 
-display_errors display_index_write(uint8_t index) {
+display_errors display_index_write(size_t index) {
 	display_errors error_code = 0;
 	
-	if (index < DISPLAY_MIN_INDEX || index > DISPLAY_MAX_INDEX) {
+	if (index < MIN_INDEX || index > MAX_INDEX) {
 		return DISPLAY_ERR_PARAM;
 	}
 	
-	error_code = display_word_write(NODE, NODE_WORD_LENGTH, NODE_WORD_ROW, NODE_WORD_COLUMN);
+	error_code = word_write(NODE, NODE_WORD_LENGTH, DISPLAY_NODE_WORD_ROW, DISPLAY_NODE_WORD_COLUMN);
 	
 	if (error_code != DISPLAY_ERR_OK) {
 		return error_code;
 	}
 	
-	if (index < DISPLAY_MAX_INDEX) {
-		error_code = display_blank_write(1, NODE_DIGITS_ROW, NODE_DIGITS_COLUMN);
+	if (index < MAX_INDEX) {
+		error_code = blank_write(1, DISPLAY_NODE_DIGITS_ROW, DISPLAY_NODE_DIGITS_COLUMN);
 		
 		if (error_code != DISPLAY_ERR_OK) {
 			return error_code;
 		}
 		
-		error_code = display_pattern_write(pgm_read_ptr_near(DIGITS + index), NODE_DIGITS_ROW, NODE_DIGITS_COLUMN + 1);
+		error_code = char_write(pgm_read_ptr_near(DIGITS + index), DISPLAY_NODE_DIGITS_ROW, DISPLAY_NODE_DIGITS_COLUMN + 1);
 		
 		if (error_code != DISPLAY_ERR_OK) {
 			return error_code;
 		}
 	}
 	
-	else if (index == DISPLAY_MAX_INDEX) {
+	else if (index == MAX_INDEX) {
 		
-		error_code = display_pattern_write(pgm_read_ptr_near(DIGITS + 1), NODE_DIGITS_ROW, NODE_DIGITS_COLUMN);
+		error_code = char_write(pgm_read_ptr_near(DIGITS + 1), DISPLAY_NODE_DIGITS_ROW, DISPLAY_NODE_DIGITS_COLUMN);
 		
 		if (error_code != DISPLAY_ERR_OK) {
 			return error_code;
 		}
 		
-		error_code = display_pattern_write(pgm_read_ptr_near(DIGITS), NODE_DIGITS_ROW, NODE_DIGITS_COLUMN + 1);
+		error_code = char_write(pgm_read_ptr_near(DIGITS), DISPLAY_NODE_DIGITS_ROW, DISPLAY_NODE_DIGITS_COLUMN + 1);
 		
 		if (error_code != DISPLAY_ERR_OK) {
 			return error_code;
@@ -618,13 +618,13 @@ display_errors display_units_write(void) {
 		return DISPLAY_ERR_SSD;
 	}
 	
-	display_error_code = display_word_write(TEMP, TEMP_WORD_LENGTH, TEMP_WORD_ROW, TEMP_WORD_COLUMN);
+	display_error_code = word_write(TEMP, TEMP_WORD_LENGTH, DISPLAY_TEMP_WORD_ROW, DISPLAY_TEMP_WORD_COLUMN);
 	
 	if (display_error_code != DISPLAY_ERR_OK) {
 		return display_error_code;
 	}
 	
-	display_error_code = display_word_write(SPEED, SPEED_WORD_LENGTH, SPEED_WORD_ROW, SPEED_WORD_COLUMN);
+	display_error_code = word_write(SPEED, SPEED_WORD_LENGTH, DISPLAY_SPEED_WORD_ROW, DISPLAY_SPEED_WORD_COLUMN);
 	
 	if (display_error_code != DISPLAY_ERR_OK) {
 		return display_error_code;
@@ -635,16 +635,16 @@ display_errors display_units_write(void) {
 
 display_errors display_temp_write(uint16_t temp_c_x10) {
 	display_errors error_code = 0;
-	uint8_t digits[DISPLAY_TEMP_DIGITS] = {0, 0, 0};
+	uint8_t digits[TEMP_DIGITS] = {0, 0, 0};
 	
-	if (temp_c_x10 > DISPLAY_MAX_TEMP_C_X10 || temp_c_x10 < DISPLAY_MIN_TEMP_C_X10) {
+	if (temp_c_x10 > MAX_TEMP_C_X10) {
 		return DISPLAY_ERR_PARAM;
 	}
 	
-	display_digits_extract(temp_c_x10, digits, DISPLAY_TEMP_DIGITS);
+	digits_extract(temp_c_x10, digits, TEMP_DIGITS);
 	
-	for (size_t i = 0; i < DISPLAY_TEMP_DIGITS; i++) {
-		error_code = display_pattern_write(pgm_read_ptr_near(DIGITS + digits[i]), TEMP_DIGITS_ROW, (uint8_t) (TEMP_DIGITS_COLUMN + i + (i / 2)));
+	for (size_t i = 0; i < TEMP_DIGITS; i++) {
+		error_code = char_write(pgm_read_ptr_near(DIGITS + digits[i]), DISPLAY_TEMP_DIGITS_ROW, (uint8_t) (DISPLAY_TEMP_DIGITS_COLUMN + i + (i / 2)));
 		
 		if (error_code != DISPLAY_ERR_OK) {
 			return error_code;
@@ -656,16 +656,16 @@ display_errors display_temp_write(uint16_t temp_c_x10) {
 
 display_errors display_speed_write(uint16_t speed_rpm) {
 	display_errors error_code = 0;
-	uint8_t digits[DISPLAY_SPEED_DIGITS] = {0, 0, 0, 0};
+	uint8_t digits[SPEED_DIGITS] = {0, 0, 0, 0};
 	
-	if (speed_rpm > DISPLAY_MAX_SPEED_RPM || speed_rpm < DISPLAY_MIN_SPEED_RPM) {
+	if (speed_rpm > MAX_SPEED_RPM) {
 		return DISPLAY_ERR_PARAM;
 	}
 	
-	display_digits_extract(speed_rpm, digits, DISPLAY_SPEED_DIGITS);
+	digits_extract(speed_rpm, digits, SPEED_DIGITS);
 	
-	for (uint8_t i = 0; i < DISPLAY_SPEED_DIGITS; i++) {
-		error_code = display_pattern_write(pgm_read_ptr_near(DIGITS + digits[i]), SPEED_DIGITS_ROW, SPEED_DIGITS_COLUMN + i);
+	for (size_t i = 0; i < SPEED_DIGITS; i++) {
+		error_code = char_write(pgm_read_ptr_near(DIGITS + digits[i]), DISPLAY_SPEED_DIGITS_ROW, DISPLAY_SPEED_DIGITS_COLUMN + i);
 		
 		if (error_code != DISPLAY_ERR_OK) {
 			return error_code;
@@ -689,13 +689,13 @@ display_errors display_error_write(system_errors error_code) {
 		return DISPLAY_ERR_SSD;
 	}
 	
-	display_error_code = display_word_write(ERR, ERR_WORD_LENGTH, ERR_WORD_ROW, ERR_WORD_COLUMN);
+	display_error_code = word_write(ERR, ERR_WORD_LENGTH, DISPLAY_ERR_WORD_ROW, DISPLAY_ERR_WORD_COLUMN);
 	
 	if (display_error_code != DISPLAY_ERR_OK) {
 		return display_error_code;
 	}
 	
-	display_error_code = display_pattern_write(pgm_read_ptr_near(DIGITS + error_code), ERR_DIGITS_ROW, ERR_DIGITS_COLUMN);
+	display_error_code = char_write(pgm_read_ptr_near(DIGITS + error_code), DISPLAY_ERR_DIGITS_ROW, DISPLAY_ERR_DIGITS_COLUMN);
 	
 	if (display_error_code != DISPLAY_ERR_OK) {
 		return display_error_code;
@@ -706,62 +706,62 @@ display_errors display_error_write(system_errors error_code) {
 
 typedef struct {
 	uint16_t target_duration;
-	uint16_t t_zero;
+	uint16_t update_t_0;
 	blink_options option;
 	uint8_t state;
 	uint8_t digit;
 	uint8_t init_flag;
-} display_blink;
+} blink_controller;
 
-static display_blink blink = {0};
+static blink_controller blink = {0};
 
-static display_errors display_word_blink_switch(blink_options option, uint8_t state) {
+static display_errors word_blink_state_switch(blink_options option, uint8_t state) {
 	display_errors error_code = 0;
 	
 	if (option == STANDARD_WORD) {
-		error_code = state ? display_blank_write(STANDARD_WORD_LENGTH, STANDARD_WORD_ROW, STANDARD_WORD_COLUMN) : display_std_write();
+		error_code = state ? blank_write(STANDARD_WORD_LENGTH, DISPLAY_STANDARD_WORD_ROW, DISPLAY_STANDARD_WORD_COLUMN) : display_standard_write();
 	}
 		
 	else if (option == ADVANCED_WORD) {
-		error_code = state ? display_blank_write(ADVANCED_WORD_LENGTH, ADVANCED_WORD_ROW, ADVANCED_WORD_COLUMN) : display_adv_write();
+		error_code = state ? blank_write(ADVANCED_WORD_LENGTH, DISPLAY_ADVANCED_WORD_ROW, DISPLAY_ADVANCED_WORD_COLUMN) : display_advanced_write();
 	}
 	
 	return error_code;
 }
 		
-static display_errors display_digit_blink_switch(blink_options option, uint8_t state, uint8_t digit) {
+static display_errors digit_blink_state_switch(blink_options option, uint8_t state, uint8_t digit) {
 	display_errors error_code = 0;
 		
 	switch (option) {
 		
 		case TEMP_FIRST_DIGIT:
 		
-			error_code = state ? display_blank_write(1, TEMP_DIGITS_ROW, TEMP_DIGITS_COLUMN) : display_pattern_write(pgm_read_ptr_near(DIGITS + digit), TEMP_DIGITS_ROW, TEMP_DIGITS_COLUMN);
+			error_code = state ? blank_write(1, DISPLAY_TEMP_DIGITS_ROW, DISPLAY_TEMP_DIGITS_COLUMN) : char_write(pgm_read_ptr_near(DIGITS + digit), DISPLAY_TEMP_DIGITS_ROW, DISPLAY_TEMP_DIGITS_COLUMN);
 			break;
 		
 		case TEMP_SECOND_DIGIT:
 		
-			error_code = state ? display_blank_write(1, TEMP_DIGITS_ROW, TEMP_DIGITS_COLUMN + 1) : display_pattern_write(pgm_read_ptr_near(DIGITS + digit), TEMP_DIGITS_ROW, TEMP_DIGITS_COLUMN + 1);
+			error_code = state ? blank_write(1, DISPLAY_TEMP_DIGITS_ROW, DISPLAY_TEMP_DIGITS_COLUMN + 1) : char_write(pgm_read_ptr_near(DIGITS + digit), DISPLAY_TEMP_DIGITS_ROW, DISPLAY_TEMP_DIGITS_COLUMN + 1);
 			break;
 		
 		case TEMP_THIRD_DIGIT:
 		
-			error_code = state ? display_blank_write(1, TEMP_DIGITS_ROW, TEMP_DIGITS_COLUMN + 3) : display_pattern_write(pgm_read_ptr_near(DIGITS + digit), TEMP_DIGITS_ROW, TEMP_DIGITS_COLUMN + 3);
+			error_code = state ? blank_write(1, DISPLAY_TEMP_DIGITS_ROW, DISPLAY_TEMP_DIGITS_COLUMN + 3) : char_write(pgm_read_ptr_near(DIGITS + digit), DISPLAY_TEMP_DIGITS_ROW, DISPLAY_TEMP_DIGITS_COLUMN + 3);
 			break;
 		
 		case SPEED_FIRST_DIGIT:
 		
-			error_code = state ? display_blank_write(1, SPEED_DIGITS_ROW, SPEED_DIGITS_COLUMN) : display_pattern_write(pgm_read_ptr_near(DIGITS + digit), SPEED_DIGITS_ROW, SPEED_DIGITS_COLUMN);
+			error_code = state ? blank_write(1, DISPLAY_SPEED_DIGITS_ROW, DISPLAY_SPEED_DIGITS_COLUMN) : char_write(pgm_read_ptr_near(DIGITS + digit), DISPLAY_SPEED_DIGITS_ROW, DISPLAY_SPEED_DIGITS_COLUMN);
 			break;
 		
 		case SPEED_SECOND_DIGIT:
 		
-			error_code = state ? display_blank_write(1, SPEED_DIGITS_ROW, SPEED_DIGITS_COLUMN + 1) : display_pattern_write(pgm_read_ptr_near(DIGITS + digit), SPEED_DIGITS_ROW, SPEED_DIGITS_COLUMN + 1);
+			error_code = state ? blank_write(1, DISPLAY_SPEED_DIGITS_ROW, DISPLAY_SPEED_DIGITS_COLUMN + 1) : char_write(pgm_read_ptr_near(DIGITS + digit), DISPLAY_SPEED_DIGITS_ROW, DISPLAY_SPEED_DIGITS_COLUMN + 1);
 			break;
 		
 		case SPEED_THIRD_DIGIT:
 		
-			error_code = state ? display_blank_write(1, SPEED_DIGITS_ROW, SPEED_DIGITS_COLUMN + 2) : display_pattern_write(pgm_read_ptr_near(DIGITS + digit), SPEED_DIGITS_ROW, SPEED_DIGITS_COLUMN + 2);
+			error_code = state ? blank_write(1, DISPLAY_SPEED_DIGITS_ROW, DISPLAY_SPEED_DIGITS_COLUMN + 2) : char_write(pgm_read_ptr_near(DIGITS + digit), DISPLAY_SPEED_DIGITS_ROW, DISPLAY_SPEED_DIGITS_COLUMN + 2);
 			break;
 		
 		default:
@@ -773,9 +773,9 @@ static display_errors display_digit_blink_switch(blink_options option, uint8_t s
 	return error_code;
 }
 
-static void display_blink_reset(void) {
+static void blink_controller_reset(void) {
 	blink.target_duration = 0;
-	blink.t_zero = 0;
+	blink.update_t_0 = 0;
 	blink.option = 0;
 	blink.state = 0;
 	blink.digit = 0;
@@ -788,58 +788,61 @@ display_errors display_word_blink(uint16_t target_duration, blink_options option
 		return DISPLAY_ERR_PARAM;
 	}
 	
-	display_blink_reset();
+	blink_controller_reset();
 	blink.target_duration = target_duration;
-	blink.t_zero = scheduler_timer_get_timestamp();
+	blink.update_t_0 = scheduler_timestamp_capture();
 	blink.option = option;
+	blink.state = 1;
 	blink.init_flag = 1;
 	return DISPLAY_ERR_OK;
 }
 
 display_errors display_digit_blink(uint16_t target_duration, blink_options option, uint16_t full_value) {
-	uint8_t digits [DISPLAY_SPEED_DIGITS] = {0, 0, 0, 0};
+	uint8_t digits [SPEED_DIGITS] = {0, 0, 0, 0};
 	
 	if (target_duration == 0 || option < TEMP_FIRST_DIGIT || option > SPEED_THIRD_DIGIT) {
 		return DISPLAY_ERR_PARAM;
 	}
 	
-	if (option < SPEED_FIRST_DIGIT && (full_value > DISPLAY_MAX_TEMP_C_X10 || full_value < DISPLAY_MIN_TEMP_C_X10)) {
+	if (option < SPEED_FIRST_DIGIT && full_value > MAX_TEMP_C_X10) {
 		return DISPLAY_ERR_PARAM;
 	}
 	
-	if (option > TEMP_THIRD_DIGIT && (full_value > DISPLAY_MAX_SPEED_RPM || full_value < DISPLAY_MIN_SPEED_RPM)) {
+	if (option > TEMP_THIRD_DIGIT && full_value > MAX_SPEED_RPM) {
 		return DISPLAY_ERR_PARAM;
 	}
 	
-	display_blink_reset();
+	blink_controller_reset();
 	blink.target_duration = target_duration;
-	blink.t_zero = scheduler_timer_get_timestamp();
+	blink.update_t_0 = scheduler_timestamp_capture();
 	blink.option = option;
+	blink.state = 1;
 	blink.init_flag = 1;
 	
 	if (option < SPEED_FIRST_DIGIT) {
-		display_digits_extract(full_value, digits, DISPLAY_TEMP_DIGITS);
+		digits_extract(full_value, digits, TEMP_DIGITS);
 		blink.digit = !(option - TEMP_FIRST_DIGIT) ? digits[0] : (!(option - TEMP_SECOND_DIGIT) ? digits[1] : digits[2]);
 	}
 	
 	else {
-		display_digits_extract(full_value, digits, DISPLAY_SPEED_DIGITS);
+		digits_extract(full_value, digits, SPEED_DIGITS);
 		blink.digit = !(option - SPEED_FIRST_DIGIT) ? digits[0] : (!(option - SPEED_SECOND_DIGIT) ? digits[1] : digits[2]);
 	}
 	
 	return DISPLAY_ERR_OK;
 }
 
-display_errors display_blink_switch(void) {
+display_errors display_blink_state_switch(void) {
 	display_errors error_code = 0;
 	
 	if (	!blink.init_flag) {
 		return DISPLAY_ERR_PARAM;
 	}
 	
-	if (scheduler_timer_poll(&(blink.t_zero), blink.target_duration)) {
-		error_code = (blink.option < TEMP_FIRST_DIGIT) ? display_word_blink_switch(blink.option, blink.state) : display_digit_blink_switch(blink.option, blink.state, blink.digit);
+	if (scheduler_timer_elapsed(blink.update_t_0, blink.target_duration)) {
+		error_code = (blink.option < TEMP_FIRST_DIGIT) ? word_blink_state_switch(blink.option, blink.state) : digit_blink_state_switch(blink.option, blink.state, blink.digit);
 		blink.state = !blink.state;
+		blink.update_t_0 = scheduler_timestamp_capture();
 	}
 	
 	return error_code;
