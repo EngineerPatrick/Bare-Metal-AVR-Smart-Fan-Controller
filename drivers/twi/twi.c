@@ -35,6 +35,8 @@
 #define TWI_STATUS_REGISTER TWSR
 #define TWI_DATA_REGISTER TWDR
 
+#define TWI_STATES_NUMBER 7U
+
 typedef enum {
 	START = 0,
 	REP_START,
@@ -54,13 +56,13 @@ typedef struct {
 
 typedef struct {
 	twi_operations current_op;
-	twi_state_branch branches[7];
+	twi_state_branch branches[TWI_STATES_NUMBER];
 } twi_state;
 
 typedef struct {
 	uint8_t status_code;
 	twi_errors error;
-	twi_state states[7];
+	twi_state states[TWI_STATES_NUMBER];
 	twi_state current_state;
 	void (*next_op_ptr)(void);
 	uint16_t current_input;
@@ -119,7 +121,7 @@ inline static uint8_t twi_transmission_finished(void) {
 */
 static void twi_state_advance(void) {
 
-	for (uint8_t i = 0; i < 6; i++) {
+	for (size_t i = 0; i < TWI_STATES_NUMBER - 1; i++) {
 	
 		if (tsm.current_input >= tsm.current_state.branches[i].input[0] && tsm.current_input <= tsm.current_state.branches[i].input[1]) {
 			tsm.next_op_ptr = tsm.current_state.branches[i].next_op_ptr;
@@ -128,7 +130,7 @@ static void twi_state_advance(void) {
 			break;
 		}
 		
-		else if (i == 5 && tsm.current_input == tsm.current_state.branches[6].input[0]) {
+		else if (i == TWI_STATES_NUMBER - 2 && tsm.current_input == tsm.current_state.branches[6].input[0]) {
 			tsm.next_op_ptr = tsm.current_state.branches[6].next_op_ptr;
 			break;
 		}
@@ -285,7 +287,7 @@ static void twi_state_machine_restore(void) {
 	tsm.states[ACK_SEND].current_op = ACK_SEND;
 	tsm.states[NACK_SEND].current_op = NACK_SEND;
 	
-	for (int i = 0; i < 7; i++) {
+	for (size_t i = 0; i < TWI_STATES_NUMBER; i++) {
 		tsm.states[i].branches[REP_START - 1].next_op = REP_START;
 		tsm.states[i].branches[REP_START - 1].next_op_ptr = twi_start_send;
 		tsm.states[i].branches[REP_START - 1].input[0] = 0;

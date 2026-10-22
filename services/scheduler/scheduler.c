@@ -43,7 +43,7 @@
 #define TIM0_CLEAR_ON_COMP (1 << WGM01)
 
 #define TIM0_CTRL_REG_B TCCR0B
-#define TIM0_PRSC 3
+#define TIM0_PRSC 3U
 
 #define TIM0_INT_MASK_REG TIMSK0
 #define TIM0_OUT_COMP_INT (1 << OCIE0A)
@@ -52,9 +52,9 @@
 #define TIM0_OUT_COMP_FLAG (1 << OCF0A)
 
 #define TIM0_TOP_REG OCR0A
-#define TIM0_TOPVALUE 249
+#define TIM0_TOPVALUE 249U
 
-#define TIMER_RANGE_MS 65536
+#define TIMER_RANGE_MS 65536U
 
 typedef struct {
 	uint16_t current_ms;

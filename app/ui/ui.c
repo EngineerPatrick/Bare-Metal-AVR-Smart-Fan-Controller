@@ -23,39 +23,39 @@
 #include "pin_map.h"
 #include "board.h"
 
-#define STD_FAN_CURVE_MAX_SIZE 10
-#define ADV_FAN_CURVE_MAX_SIZE 10
+#define STD_FAN_CURVE_MAX_SIZE 10U
+#define ADV_FAN_CURVE_MAX_SIZE 10U
 
-#define TEMP_MIN_RATE 1
-#define TEMP_MAX_RATE 100
-#define SPEED_MIN_RATE 10
-#define SPEED_MAX_RATE 1000
+#define TEMP_MIN_RATE 1U
+#define TEMP_MAX_RATE 100U
+#define SPEED_MIN_RATE 10U
+#define SPEED_MAX_RATE 1000U
 #define EXIT 99
 #define STANDARD 1
 #define ADVANCED 2
 
 static inline void ui_rate_init(void) {
-	D0_D7_DATA_DIRECTION_REG &= ~RATE_BUTTON_DIRECTION;
+	D0_D7_DATA_DIRECTION_REG &= ((uint8_t) ~RATE_BUTTON_DIRECTION);
 	D0_D7_DATA_REG |= RATE_BUTTON_PULLUP_R;
 }
 
 static inline void ui_select_init(void) {
-	D0_D7_DATA_DIRECTION_REG &= ~SELECT_BUTTON_DIRECTION;
+	D0_D7_DATA_DIRECTION_REG &= ((uint8_t) ~SELECT_BUTTON_DIRECTION);
 	D0_D7_DATA_REG |= SELECT_BUTTON_PULLUP_R;
 }
 
 static inline void ui_confirm_init(void) {
-	D0_D7_DATA_DIRECTION_REG &= ~CONFIRM_BUTTON_DIRECTION;
+	D0_D7_DATA_DIRECTION_REG &= ((uint8_t) ~CONFIRM_BUTTON_DIRECTION);
 	D0_D7_DATA_REG |= CONFIRM_BUTTON_PULLUP_R;
 }
 
 static inline void ui_re_clk_init(void) {
-	D0_D7_DATA_DIRECTION_REG &= ~ROT_ENC_CLK_DIRECTION;
+	D0_D7_DATA_DIRECTION_REG &= ((uint8_t) ~ROT_ENC_CLK_DIRECTION);
 	D0_D7_DATA_REG |= ROT_ENC_CLK_PULLUP_R;
 }
 
 static inline void ui_re_dt_init(void) {
-	D0_D7_DATA_DIRECTION_REG &= ~ROT_ENC_DT_DIRECTION;
+	D0_D7_DATA_DIRECTION_REG &= ((uint8_t) ~ROT_ENC_DT_DIRECTION);
 	D0_D7_DATA_REG |= ROT_ENC_DT_PULLUP_R;
 }
 

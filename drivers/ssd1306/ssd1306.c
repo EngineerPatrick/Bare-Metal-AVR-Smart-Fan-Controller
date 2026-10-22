@@ -18,18 +18,18 @@
 #include "twi.h"
 #include "config.h"
 
-#define DATA_BYTE 0x40
-#define COMMAND_BYTE 0x80
+#define DATA_BYTE (1 << 6)
+#define COMMAND_BYTE (1 << 7)
 #define MEMORY_ADDRESSING_MODE 0x20
-#define HORIZONTAL_ADDRESSING_MODE 0X00
+#define HORIZONTAL_ADDRESSING_MODE 0
 #define COLUMN_START_END 0x21
 #define PAGE_START_END 0x22
 #define CHARGE_PUMP_SETTING 0x8D
 #define CHARGE_PUMP_ENABLE 0x14
 #define DISPLAY_ON 0xAF
 
-#define CONFIG_LENGTH 16
-#define TURNON_LENGTH 6
+#define CONFIG_LENGTH 16U
+#define TURNON_LENGTH 6U
 
 static const uint8_t CONFIG[CONFIG_LENGTH] PROGMEM = {COMMAND_BYTE, MEMORY_ADDRESSING_MODE, COMMAND_BYTE, HORIZONTAL_ADDRESSING_MODE, COMMAND_BYTE, COLUMN_START_END, COMMAND_BYTE, 0x00, COMMAND_BYTE, 0x00, COMMAND_BYTE, PAGE_START_END, COMMAND_BYTE, 0x00, COMMAND_BYTE, 0x00};
 
@@ -40,9 +40,9 @@ static uint8_t init_flag = 0;
 ssd_errors ssd1306_data_reset(void) {
 	twi_errors error_code = 0;
 	uint8_t commands[CONFIG_LENGTH];
-	uint8_t data[9] = {DATA_BYTE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+	uint8_t data[9] = {DATA_BYTE, 0, 0, 0, 0, 0, 0, 0, 0};
 	
-	for (uint8_t i = 0; i < CONFIG_LENGTH; i++) {
+	for (size_t i = 0; i < CONFIG_LENGTH; i++) {
 		commands[i] = pgm_read_byte(CONFIG + i);
 	}
 	
@@ -50,9 +50,9 @@ ssd_errors ssd1306_data_reset(void) {
 		commands[13] = i;
 		commands[15] = i;
 			
-		for (uint8_t j = 0; j < 16; j++) {
-			commands[7] = 8 * j;
-			commands[9] = 7 + 8 * j;			
+		for (int j = 0; j < 16; j++) {
+			commands[7] = (uint8_t) (8 * j);
+			commands[9] = (uint8_t) ((8 * j) + 7);			
 			error_code = twi_master_transmitter(TWI_BITRATE_REG, TWI_BITRATE_PRESCALER, CONFIG_LENGTH, SSD1306_SLA_ADD, commands);
 			
 			if (error_code != TWI_ERR_OK) {
@@ -76,7 +76,7 @@ ssd_errors ssd1306_display_on(void) {
 	twi_errors error_code = 0;
 	uint8_t commands[TURNON_LENGTH];
 	
-	for (uint8_t i = 0; i < TURNON_LENGTH; i++) {
+	for (size_t i = 0; i < TURNON_LENGTH; i++) {
 		commands[i] = pgm_read_byte(TURNON + i);
 	}
 	
@@ -107,20 +107,20 @@ ssd_errors ssd1306_8x8char_write(const uint8_t* char_bytes, uint8_t row, uint8_t
 		}
 	}
 	
-	for (uint8_t i = 0; i < CONFIG_LENGTH - 4; i++) {
+	for (size_t i = 0; i < CONFIG_LENGTH - 4; i++) {
 		commands[i] = pgm_read_byte(CONFIG + 4 + i);
 	}
 	
 	data[0] = DATA_BYTE;
 	
-	for (uint8_t i = 0; i < 8; i++) {
+	for (int i = 0; i < 8; i++) {
 		data[i + 1] = *(char_bytes + i);
 	}
 	
-	commands[3] = 8 * (column - 1);
-	commands[5] = 7 + (8 * (column - 1));
-	commands[9] = (row - 1);
-	commands[11] = (row - 1);
+	commands[3] = (uint8_t) (8 * (column - 1));
+	commands[5] = (uint8_t) (7 + (8 * (column - 1)));
+	commands[9] = (uint8_t) (row - 1);
+	commands[11] = (uint8_t) (row - 1);
 	error_code = twi_master_transmitter(TWI_BITRATE_REG, TWI_BITRATE_PRESCALER, CONFIG_LENGTH - 4, SSD1306_SLA_ADD, commands);
 			
 	if (error_code != TWI_ERR_OK) {

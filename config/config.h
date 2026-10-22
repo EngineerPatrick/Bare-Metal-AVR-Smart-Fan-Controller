@@ -21,9 +21,9 @@
 *		ATmega328P/Arduino UNO R3 (see the frequency formula in twi.h)
 *
 */
-#define TWI_BITRATE_REG 72
+#define TWI_BITRATE_REG 72U
 #define TWI_BITRATE_PRESCALER 0
-#define TWI_TIMEOUT_MS 400
+#define TWI_TIMEOUT_MS 400U
 
 /**UI*/
 /*
@@ -35,20 +35,20 @@
 *		-The valid range for the temperatures is [BME280_MIN_TEMP_C_X10, BME280_MAX_TEMP_C_X10] (see below)
 *
 */
-#define UI_STD_CURVE_SIZE 8
-#define UI_STD_TEMP_1 200
-#define UI_STD_TEMP_2 250
-#define UI_STD_TEMP_3 300
-#define UI_STD_TEMP_4 350
-#define UI_STD_TEMP_5 400
-#define UI_STD_TEMP_6 500
-#define UI_STD_TEMP_7 600
-#define UI_STD_TEMP_8 650
-#define UI_STD_TEMP_9 000
-#define UI_STD_TEMP_10 000
+#define UI_STD_CURVE_SIZE 8U
+#define UI_STD_TEMP_1 200U
+#define UI_STD_TEMP_2 250U
+#define UI_STD_TEMP_3 300U
+#define UI_STD_TEMP_4 350U
+#define UI_STD_TEMP_5 400U
+#define UI_STD_TEMP_6 500U
+#define UI_STD_TEMP_7 600U
+#define UI_STD_TEMP_8 650U
+#define UI_STD_TEMP_9 0
+#define UI_STD_TEMP_10 0
 
-#define BUTTONS_DEBOUNCE_TIME_MS 250
-#define BLINK_TIME_MS 400
+#define BUTTONS_DEBOUNCE_TIME_MS 250U
+#define BLINK_TIME_MS 400U
 
 /**DISPLAY*/
 /*
@@ -58,8 +58,8 @@
 *		-Every position must be set so that every character fits within an 8x16 grid
 *
 */
-#define FIRST_ROW 3
-#define FIRST_COLUMN 3
+#define FIRST_ROW 3U
+#define FIRST_COLUMN 3U
 
 #define SELECT_WORD_ROW FIRST_ROW
 #define SELECT_WORD_COLUMN FIRST_COLUMN
@@ -117,7 +117,7 @@
 *		-The valid range is [1, 10]
 *
 */
-#define MIN_DC_REG_STEP 1
+#define MIN_DC_REG_STEP 1U
 /*
 *
 *		Hysteresis correction factor to account for rounded decimals and non-liner speed
@@ -125,7 +125,7 @@
 *		-The valid range is [15, 50]
 *
 */
-#define HYST_CORR_FACT_X1000 15
+#define HYST_CORR_FACT_X1000 15U
 /*
 *
 *		Minimum duty-cycle register value to spin the fan tested with a 9 V DC supply
@@ -133,7 +133,7 @@
 *		-The valid range is [0, 40] (half range: the reg top value is 79)
 *
 */
-#define MIN_DC_REG_VALUE 2
+#define MIN_DC_REG_VALUE 2U
 /*
 *	
 *	  	Approximate MIN-MAX fan speed values for a 9 V DC supply calculated from the tachometer
@@ -146,15 +146,15 @@
 *		-Keep this range smaller than the real measured one to guarantee the reaching of the target speed
 *
 */
-#define FAN_DRIVER_MIN_SPEED_RPM 350
-#define FAN_DRIVER_MAX_SPEED_RPM 2000
+#define FAN_DRIVER_MIN_SPEED_RPM 350U
+#define FAN_DRIVER_MAX_SPEED_RPM 2000U
 
-#define FAN_DRIVER_BOOT_DELAY_MS 1000
-#define FAN_DRIVER_TIMEOUT_MS 400
-#define FAN_DRIVER_UPDATE_TIME_MS 80
+#define FAN_DRIVER_BOOT_DELAY_MS 1000U
+#define FAN_DRIVER_TIMEOUT_MS 400U
+#define FAN_DRIVER_UPDATE_TIME_MS 80U
 
 /*FAULT_MANAGER*/
-#define BUZZER_DURATION_S 20
+#define BUZZER_DURATION_S 20U
 
 #endif
 
