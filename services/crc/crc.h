@@ -15,16 +15,14 @@
 
 /**
 *
-*	@brief	Calculates the CRC16-CCITT of a given bytes sequence.
+*	@brief	Calculates the CRC16-CCITT of a given byte-sequence.
 *
-*	@param	length			    			Number of bytes
-*	@param	data						Address of the first byte
+*	@param	length[in]							Number of bytes
+*	@param	data[out]							Sequence array
 *
-*	@retval	0   						If data == NULL || !length
+*	@retval	0									If data == NULL || !length
 *
-*	@pre 	data != NULL
-*	@pre 	length > 0
-*	@post 	On success the correct CRC is calculated and returned
+*	@post	On success the correct CRC is calculated and returned
 *
 */
 uint16_t crc16_ccitt(uint16_t length, const uint8_t* data);

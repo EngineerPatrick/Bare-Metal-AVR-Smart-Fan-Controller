@@ -25,16 +25,15 @@ typedef enum {
 *
 *	@brief	Reports the UI module error codes.
 *
-*	@param	ui_error_code					Error code from the UI module
-*
+*	@param	ui_error_code						Error code from the UI module
+
 *	@retval	FAULT_MANAGER_ERR_OK				If no error occurs
 *	@retval	FAULT_MANAGER_ERR_PARAM				If ui_error_code > UI_ERR_FAN_DRIVER
 *	@retval	FAULT_MANAGER_ERR_DISPLAY			If an error with the display occurs
 *
-*	@pre 	ui_error_code <= UI_ERR_FAN_DRIVER
-*	@pre 	The scheduler must be activated by calling scheduler_timer_boot
-*	@post 	If scheduler_timer_boot has not been called the correct execution is not guaranteed
-*	@post 	If passed parameter is invalid no LED or buzzer is activated and the display is left unchanged
+*	@pre 	The scheduler is booted by calling scheduler_timer_boot
+*	@post 	If scheduler_timer_boot has not been called, or if scheduler_timer_stop has been called afterwards, then the correct execution is not guaranteed
+*	@post 	If the passed parameter is invalid no LED or buzzer is activated and the display is left unchanged
 *	@post 	On success the display prints the error code and the corresponding LED or buzzer is activated
 *
 */
