@@ -4,7 +4,7 @@
 *
 *   @brief Implementation for the scheduler module.
 *
-*   @details Configures the timer registers and handles delay and
+*   @details Configures Timer0 registers and handles delay and
 *	polling logic.
 *
 *   Integrates the util/atomic library of Avr-libC for both
@@ -24,7 +24,7 @@
 *
 *	For the Arduino UNO R3 the default CPU Clock Frequency = 16 MHz
 *
-*	*Period*
+*	*Tick period*
 *	prescaler value = 64, top value = 249 -> 1 ms
 *
 */
@@ -54,90 +54,110 @@
 #define TIM0_TOP_REG OCR0A
 #define TIM0_TOPVALUE 249U
 
-#define TIMER_RANGE_MS 65536U
+#define TIMER_RANGE_MS 65536UL
 
 typedef struct {
-	uint16_t current_ms;
 	uint8_t init_flag;
-} scheduler_timer;
+	uint8_t boot_flag;
+} timer_state;
 
-static volatile scheduler_timer timer = {0};
+typedef struct {
+	timer_state state;
+	volatile uint16_t current_ms;
+} timer_controller;
+
+static timer_controller scheduler_controller = {0};
 
 ISR(TIMER0_COMPA_vect) {
-	timer.current_ms++;
+	scheduler_controller.current_ms++;
 }
 
-static inline void scheduler_tim0_ctc_init(void) {
+static inline void tim0_mode_config(void) {
 	TIM0_CTRL_REG_A = TIM0_CLEAR_ON_COMP;
-	TIM0_INT_MASK_REG = TIM0_OUT_COMP_INT;
 	TIM0_TOP_REG = TIM0_TOPVALUE;
+	TIM0_INT_FLAG_REG = 0xFF;
+	TIM0_COUNT_REG = 0;
+	TIM0_INT_MASK_REG = TIM0_OUT_COMP_INT;
 }
 
-static inline void scheduler_tim0_prsc_init(void) {
+static inline void tim0_boot(void) {
 	TIM0_CTRL_REG_B = TIM0_PRSC;
 }
 
-static inline void scheduler_tim0_stop(void) {
+static inline void tim0_stop(void) {
 	TIM0_INT_MASK_REG = 0;
 	TIM0_INT_FLAG_REG = TIM0_OUT_COMP_FLAG;
 	TIM0_CTRL_REG_B = 0;
 	TIM0_CTRL_REG_A = 0;
+	TIM0_TOP_REG = 0;
 	TIM0_COUNT_REG = 0;
 }
 
-static void scheduler_timer_1ms_init(void) {
-	scheduler_tim0_ctc_init();
-	sei();
-	timer.init_flag = 1;
-}
+static void timer_init(void) {
 
-void scheduler_timer_start(void) {
-
-	if (!timer.init_flag) {
-		scheduler_timer_1ms_init();
+	if (scheduler_controller.state.init_flag) {
+		return;
 	}
 	
-	scheduler_tim0_prsc_init();
-	sei();
+	tim0_mode_config();	
+	scheduler_controller.state.init_flag = 1;
+}
+
+void scheduler_timer_boot(void) {
+	
+	if (scheduler_controller.state.boot_flag) {
+		return;
+	}
+	
+	if (!scheduler_controller.state.init_flag) {
+		timer_init();
+	}
+	
+	tim0_boot();
+	scheduler_controller.state.boot_flag = 1;
 }
 
 void scheduler_timer_stop(void) {
-	scheduler_tim0_stop();
-	timer.current_ms = 0;
-	timer.init_flag = 0;
-}
 
-uint16_t scheduler_timer_get_timestamp(void) {
-	uint16_t timer_capture_ms = 0;
-	
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		timer_capture_ms = timer.current_ms;
+	if (!scheduler_controller.state.boot_flag) {
+		return;
 	}
 	
-	return timer_capture_ms;
+	tim0_stop();
+	scheduler_controller.current_ms = 0;
+	scheduler_controller.state.init_flag = 0;
+	scheduler_controller.state.boot_flag = 0;
 }
 
-uint8_t scheduler_timer_poll(uint16_t* t_zero_ms, uint16_t target_duration_ms) {
-	uint16_t timer_capture_ms = 0;
+uint16_t scheduler_timestamp_capture(void) {
+	uint16_t captured_timestamp_ms = 0;
 	
-	if (!target_duration_ms || t_zero_ms == NULL || !timer.init_flag) {
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		captured_timestamp_ms = scheduler_controller.current_ms;
+	}
+	
+	return captured_timestamp_ms;
+}
+
+uint8_t scheduler_timer_elapsed(uint16_t t_0_ms, uint16_t target_duration_ms) {
+	uint16_t captured_timestamp_ms = 0;
+	
+	if (!target_duration_ms || !scheduler_controller.state.boot_flag) {
 		return 0;
 	}
 	
-	timer_capture_ms = scheduler_timer_get_timestamp();
+	captured_timestamp_ms = scheduler_timestamp_capture();
 	
-	if (timer_capture_ms > *t_zero_ms) {
+	if (captured_timestamp_ms > t_0_ms) {
 	
-		if (timer_capture_ms - *t_zero_ms >= target_duration_ms) {
-			*t_zero_ms = timer_capture_ms;
+		if (captured_timestamp_ms - t_0_ms >= target_duration_ms) {
 			return 1;
 		}
 	}
 	
-	else if (timer_capture_ms < *t_zero_ms) {
+	else if (captured_timestamp_ms < t_0_ms) {
 	
-		if ((TIMER_RANGE_MS - *t_zero_ms) + timer_capture_ms >= target_duration_ms) {
-			*t_zero_ms = timer_capture_ms;
+		if ((TIMER_RANGE_MS - t_0_ms) + captured_timestamp_ms >= target_duration_ms) {
 			return 1;
 		}
 	}
@@ -146,10 +166,10 @@ uint8_t scheduler_timer_poll(uint16_t* t_zero_ms, uint16_t target_duration_ms) {
 }
 
 void scheduler_timer_delay(uint16_t target_duration_ms) {
-	uint16_t timer_capture_ms = scheduler_timer_get_timestamp();
+	uint16_t captured_timestamp_ms = scheduler_timestamp_capture();
 	
-	if (target_duration_ms && timer.init_flag) {
+	if (target_duration_ms && scheduler_controller.state.boot_flag) {
 		
-		while (!scheduler_timer_poll(&timer_capture_ms, target_duration_ms)) {}
+		while (!scheduler_timer_elapsed(captured_timestamp_ms, target_duration_ms)) {}
 	}
 }
