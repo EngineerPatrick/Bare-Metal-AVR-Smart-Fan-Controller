@@ -4,8 +4,8 @@
 *
 *	@brief Public API for the bme280 module.
 *
-*	@details Module to read the temperature and the chip ID from
-*	the sensor integrating the 2-wire interface for transmission.
+*	@details Module to read the temperature from the sensor
+*	integrating the 2-wire interface for transmission.
 *
 *	Implements compensation formulas provided by the manufacturer.
 *
@@ -26,57 +26,37 @@ typedef enum {
 
 /**
 *
-*	@brief	Reads the chip ID from the sensor.
+*	@brief	Captures the temperature from the sensor and saves it.
 *
-*	@param	chip_id					Pointer to the variable where to save the chip ID
+*	@param	temp_c_x10						Pointer to the variable where to save the temperature
 *
-*	@retval	BME_ERR_OK				If no error occurs
-*	@retval	BME_ERR_PARAM			If chip_id == NULL
-*	@retval	BME_ERR_TWI				If an error with the 2-wire interface occurs
-*
-*   @pre   	chip_id != NULL
-*   @post   If passed parameter is invalid the transmission is not started and chip_id is left unchanged
-*   @post   If an error with the 2-wire interface occurs the correct execution is not guaranteed
-*	@post 	On success the chip ID is saved in chip_id
-*	@post 	On success the transmission is stopped and the sensor is left configured
-*
-*/
-bme_errors bme280_chip_id_read(uint8_t* chip_id);
-
-/**
-*
-*	@brief	Configures the sensor to perform temperature live readings.
-*
-*	@retval	BME_ERR_OK				If no error occurs
-*	@retval	BME_ERR_TWI				If an error with the 2-wire interface occurs
-*
-*   @post   If an error with the 2-wire interface occurs the correct execution is not guaranteed
-*	@post 	On success the sensor is configured to perform temperature live readings
-*	@post 	On success the transmission is stopped and the sensor is left configured
-*
-*/
-bme_errors bme280_temp_init(void);
-
-/**
-*
-*	@brief	Reads the temperature from the sensor and saves it.
-*
-*	@param	temp_c_x10				Pointer to the variable where to save the temperature
-*
-*	@retval	BME_ERR_OK				If no error occurs
-*	@retval	BME_ERR_PARAM			If temp_c_x10 == NULL || BME280_MAX_TEMP_C_X10 > 850
-*	@retval	BME_ERR_TWI				If an error with the 2-wire interface occurs
+*	@retval	BME_ERR_OK						If no error occurs
+*	@retval	BME_ERR_PARAM					If temp_c_x10 == NULL
+*	@retval	BME_ERR_TWI						If an error with the twi driver occurs
 *
 *   @pre   	temp_c_x10 != NULL
-*	@pre 	BME280_MAX_TEMP_C_X10 < 850
-*   @post   If passed parameters are invalid the transmission is not started and the variable temp_c_x10 is left unchanged
-*   @post   If an error with the 2-wire interface occurs the correct execution is not guaranteed
-*   @post   If bme280_temp_init has never been called it is called
-*	@post 	On success the measured value is compensated using the datasheet formulas and clamped within the valid boundaries
-*	@post 	On success the temperature is saved in the variable temp_c_x10
-*	@post 	On success the transmission is stopped and the sensor is left configured
+*   @pre   	This function is polled to capture the sensor temperature live readings
+*   @post   If passed parameter is invalid the transmission is not started and the temperature is not saved
+*   @post   If an error with the twi driver occurs the correct execution is not guaranteed
+*	@post 	On success the captured temperature is compensated using the datasheet formulas and clamped within the valid boundaries
+*	@post 	On success the temperature is saved in the pointed variable
+*	@post 	On success the transmission is stopped and the sensor is left configured for temperature live readings (~26 Hz)
 *
 */
-bme_errors bme280_temp_read(int16_t* temp_c_x10);
+bme_errors bme280_temp_capture(int16_t* temp_c_x10);
+
+/**
+*
+*	@brief	Stops the sensor from performing temperature live readings and resets it.
+*
+*	@retval	BME_ERR_OK						If no error occurs
+*	@retval	BME_ERR_TWI						If an error with the twi driver occurs
+*
+*   @post   If an error with the twi driver occurs the correct execution is not guaranteed
+*	@post 	If bme280_temp_capture has not been called the sensor is left unchanged
+*	@post 	On success the transmission is stopped and the sensor is reset
+*
+*/
+bme_errors bme280_stop(void);
 
 #endif
