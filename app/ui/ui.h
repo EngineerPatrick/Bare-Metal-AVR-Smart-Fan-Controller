@@ -27,37 +27,39 @@ typedef enum {
 
 /**
 *
-*	@brief	Starts the UI to create a new fan curve.
+*	@brief	Starts the UI to create a new fan curve and to save it in EEPROM.
 *
-*	@retval	UI_ERR_OK				If no error occurs
-*	@retval	UI_ERR_FAN_CURVE 		If the curve is not correctly saved in EEPROM or the standard curve fixed values are out of range
-*	@retval	UI_ERR_DISPLAY			If an error with the SSD1306 display occurs
+*	@retval	UI_ERR_OK						If no error occurs
+*	@retval	UI_ERR_FAN_CURVE 				If an error with the fan_curve service occurs
+*	@retval	UI_ERR_DISPLAY					If an error with the display service occurs
 *
-*	@post 	If the standard curve fixed values are out of range the fan curve saved in EEPROM is left unchanged
-*	@post 	If an error with EEPROM or the SSD1306 display occurs the correct execution is not guaranteed
+*	@post 	If an error with the fan_curve service or the display service occurs the correct execution is not guaranteed
 *	@post 	On success the new curve is created and saved in EEPROM
 *
 */
-ui_errors ui_system_configure(void);
+ui_errors ui_system_config(void);
 
 /**
 *
-*	@brief	Updates the entire system with new readings.
+*	@brief	Handles the system runtime loop.
 *
-*	@retval	UI_ERR_OK				If no error occurs
-*	@retval	UI_ERR_BME				If an error with the BME280 sensor occurs
-*	@retval	UI_ERR_DISPLAY			If an error with the SSD1306 display occurs
-*	@retval	UI_ERR_FAN_CURVE 		If the curve is not correctly saved in EEPROM
-*	@retval	UI_ERR_FAN_DRIVER		If an error with the PWM occurs
+*	@retval	UI_ERR_OK						If no error occurs
+*	@retval	UI_ERR_BME						If an error with the bme280 driver occurs
+*	@retval	UI_ERR_DISPLAY					If an error with the display service occurs
+*	@retval	UI_ERR_FAN_CURVE 				If an error with the fan_curve service occurs
+*	@retval	UI_ERR_FAN_DRIVER				If an error with the fan driver occurs
 *
-*	@post 	If an error with the BME280, the SSD1306 display, EEPROM or the PWM occurs the correct execution is not guaranteed
-*	@post 	On success the PWM duty-cycle is set to 50% for FAN_DRIVER_BOOT_DELAY_MS to overcome inertia before using the tachometer hardware timeout
-*	@post 	On success the BME280 sensor performs temperature live readings and the SSD1306 display shows them
-*	@post 	On success the real-time target speed is calculated from the fan curve
-*	@post 	On success the PWM duty-cycle is updated every FAN_DRIVER_UPDATE_TIME_MS to approximately match the fan speed with the new target speed
-*	@post 	On success the display shows the real-time measured speed
+*	@pre 	The scheduler must be activated by calling scheduler_timer_boot
+*	@post 	If scheduler_timer_boot has not been called the correct execution is not guaranteed
+*	@post 	If an error with the bme280 driver, the display service, the fan_curve service or the fan driver occurs the correct execution is not guaranteed
+*	@post 	On success the PWM is booted at 50% duty cycle for an initial delay to overcome the inertia before checking for missed tachometer readings
+*	@post 	On success the BME280 sensor performs temperature live readings
+*	@post 	On success the target speed is calculated from the fan curve saved in EEPROM
+*	@post 	On success the PWM duty-cycle is updated to match the fan speed with the closest possible value of the new target speed
+*	@post 	On success the SSD1306 display shows the real-time measured values
+*	@post 	If the function returns the fan and the BME280 are stopped and reset
 *
 */
-ui_errors ui_system_update(void);
+ui_errors ui_system_runtime_loop(void);
 
 #endif
