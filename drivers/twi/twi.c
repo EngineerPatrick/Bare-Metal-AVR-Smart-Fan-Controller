@@ -2,10 +2,10 @@
 *   
 *   @file twi.c
 *
-*   @brief Implementation for the twi module for an AVR MCU.
+*   @brief Implementation for the twi module for the ATmega328P.
 *
-*   @details Contains the interrupt-based finite state machine logic
-*	which can be reused with inputs different from the progressive index.
+*   @details Contains the interrupt-based finite state machine, which could be
+*	reused with inputs different from the progressive index.
 *
 *   Validates transmission completion and handles hardware faults with
 *	scheduler timeout.
@@ -114,7 +114,7 @@ inline static uint8_t twi_transmission_finished(void) {
 *
 *	@pre 	Every used state has at least one branch pointing to the next state within an input range
 *	@pre 	All input ranges of a used states are non-intersecting intervals with each others
-*	@post	The state machine is advanced to the state pointed by the branch having an input range that includes the current input
+*	@post	The state machine is advanced to the state pointed by the branch with an input range which includes the current input
 *
 */
 static void twi_state_advance(void) {

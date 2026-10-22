@@ -8,7 +8,7 @@
 *	and the runtime loop.
 *
 *	Handles 3 buttons and 1 rotary encoder for the input and
-*	a display for the output.
+*	1 display for the output.
 *
 */
 

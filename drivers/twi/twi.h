@@ -5,7 +5,7 @@
 *	@brief Public API for the twi module.
 *
 *	@details Module to transmit and receive bytes through the 2-wire interface of
-*	an ATmega328P implementing an interrupt-based finite state machine (Mealy).
+*	the ATmega328P implementing an interrupt-based finite state machine (Mealy).
 *
 *	All data structures and ISR logic are hidden from the caller to enforce
 *	low coupling.
@@ -68,10 +68,11 @@ typedef enum {
 *	@pre 	0 <= bitrate <= 255
 *	@pre 	0 <= bitrate_prsc <= 3
 *	@pre 	bytes_num > 0
-*	@pre 	tx_buff points to the first element of an array containing the bytes to be transmitted
+*	@pre 	tx_buff points to the first element of an array of size bytes_num containing the bytes to be transmitted
+*   @post   If the buffer array has a size smaller than bytes_num the correct execution is not guaranteed
 *   @post   If passed parameters are invalid the state machine is not configured and the transmission is not started
-*   @post   If an error with TW_STATUS occurs the transmission is stopped, changes to the state machine and the slave device are left and the error is returned
-*   @post   If the transmission lasts longer than TWI_TIMEOUT_MS the transmission is stopped and changes to the state machine and the slave device are left
+*   @post   If an error with TW_STATUS occurs the transmission is stopped, changes to the state machine and to the slave device are left and the error is returned
+*   @post   If the transmission lasts longer than TWI_TIMEOUT_MS the transmission is stopped and changes to the state machine and to the slave device are left
 *	@post 	On success all the bytes are transmitted from the buffer array to the slave device
 *	@post	On success the executed progressive states are: START SENT, SLAW SENT, DATA SENT and STOP SENT
 *	@post 	On success the transmission is stopped and the state machine is left configured
@@ -106,10 +107,11 @@ twi_errors twi_master_transmitter(uint8_t bitrate, uint8_t bitrate_prsc, uint16_
 *	@pre 	0 <= bitrate <= 255
 *	@pre 	0 <= bitrate_prsc <= 3
 *	@pre 	bytes_num > 0
-*	@pre 	rx_buff points to the first element of an array containing the bytes to be received
+*	@pre 	rx_buff points to the first element of an array of size bytes_num containing the bytes to be received
+*   @post   If the buffer array has a size smaller than bytes_num the correct execution is not guaranteed
 *   @post   If passed parameters are invalid the state machine is not configured and the transmission is not started
-*   @post   If an error with TW_STATUS occurs the transmission is stopped, changes to the state machine and the buffer array are left and the error is returned
-*   @post   If the transmission lasts longer than TWI_TIMEOUT_MS the transmission is stopped and changes to the state machine and the buffer array are left
+*   @post   If an error with TW_STATUS occurs the transmission is stopped, changes to the state machine and to the buffer array are left and the error is returned
+*   @post   If the transmission lasts longer than TWI_TIMEOUT_MS the transmission is stopped and changes to the state machine and to the buffer array are left
 *	@post 	On success all the bytes are received from the slave device and saved in the buffer array
 *	@post	On success the executed progressive states are: START SENT, SLAR SENT, ACK SENT, NACK SENT and STOP SENT
 *	@post 	On success the transmission is stopped and the state machine is left configured

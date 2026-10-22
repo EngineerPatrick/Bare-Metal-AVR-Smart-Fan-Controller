@@ -4,8 +4,8 @@
 *
 *   @brief Implementation for the fan_driver module.
 *
-*   @details Contains the PWM control logic and the 
-*	fan tachometer interrupt-based measurement.
+*   @details Contains the PWM logic and the 
+*	fan tachometer feedback controller.
 *
 *	Integrates the util/atomic library of avr-libc to
 *	read ISR shared volatile variables atomically.
@@ -29,7 +29,7 @@
 
 /*
 *
-*	For the ATmega328P using 8-bit timer 2 in Fast PWM mode:
+*	For the ATmega328P using Timer2 in Fast PWM mode:
 *
 *	f = (CPU Clock Frequency) / (prescaler * (1 + top))
 *
@@ -46,7 +46,7 @@
 
 /*
 *
-*	For the ATmega328P using 16-bit timer 1 with the Input Capture Unit:
+*	For the ATmega328P using Timer1 with the input capture unit:
 *
 *	f = (CPU Clock Frequency) / (prescaler)
 *
@@ -55,7 +55,7 @@
 *	For the Arduino UNO R3 the default CPU Clock Frequency = 16 MHz
 *
 *	*Timer resolution*
-*	prescaler value = 8 -> MIN time between ticks 500 ns
+*	prescaler value = 8 -> MIN time between ticks = 500 ns
 *
 */
 
@@ -217,9 +217,10 @@ void fan_driver_boot(void) {
 	*
 	*		Speed hysteresis to prevent continuous target speed update in fan_driver_update
 	*			
-	*		-If TIM2_DUTY_CYCLE_REG changes by MIN_DC_REG_STEP the speed changes of MIN_DC_REG_STEP *(FAN_DRIVER_SPEED_RANGE / DC_REG_VALUE_RANGE)
+	*		-If TIM2_DUTY_CYCLE_REG changes by MIN_DC_REG_STEP, the speed is estimated to change of
+	*		MIN_DC_REG_STEP *(FAN_DRIVER_SPEED_RANGE / DC_REG_VALUE_RANGE)
 	*
-	*		-HYST_CORR_FACT_X1000 is used  to account for discarded decimals and non-linear speed
+	*		-HYST_CORR_FACT_X1000 is used to account for discarded decimals and non-linear speed
 	*
 	*/
 	fan.hysteresis_rpm = (uint16_t) ((((uint32_t) MIN_DC_REG_STEP * FAN_DRIVER_SPEED_RANGE * HYST_CORR_FACT_X1000 * 1000) / DC_REG_VALUE_RANGE) / 1000);

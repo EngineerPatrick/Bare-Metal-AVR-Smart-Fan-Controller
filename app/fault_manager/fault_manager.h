@@ -32,8 +32,8 @@ typedef enum {
 *	@retval	F_MAN_ERR_DISPLAY		If an error with the display occurs
 *
 *	@pre 	ui_error_code <= UI_ERR_FAN_DRIVER
-*	@post 	If passed parameter is invalid no LED is lit and the display is left unchanged
-*	@post 	On success the display prints the error code and the corresponding LED is lit or the buzzer is activated
+*	@post 	If passed parameter is invalid no LED or buzzer is activated and the display is left unchanged
+*	@post 	On success the display prints the error code and the corresponding LED or buzzer is activated
 *
 */
 f_man_errors fault_manager_ui(ui_errors ui_error_code);

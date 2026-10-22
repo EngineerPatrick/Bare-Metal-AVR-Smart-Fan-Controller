@@ -4,7 +4,7 @@
 *
 *	@brief System pins map.
 *
-*	@details Board-user interface that maps every used pin
+*	@details Interface that maps every used pin
 *   to a board pin.
 *
 */

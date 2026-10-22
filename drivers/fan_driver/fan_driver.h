@@ -40,12 +40,13 @@ void fan_driver_boot(void);
 *	@param	measured_speed_rpm 		Measured speed value
 *
 *	@retval	FAN_DRIVER_ERR_OK		If no error occurs
-*	@retval	FAN_DRIVER_ERR_TACH		If there was no tachometer reading for a period of FAN_DRIVER_TIMEOUT_MS
-*	@retval	FAN_DRIVER_ERR_CONFIG	If (FAN_DRIVER_MAX_SPEED_RPM - FAN_DRIVER_MIN_SPEED_RPM) < 80 || !(1 <= MIN_DC_REG_STEP <= 10) || !(0 <= MIN_DC_REG_VALUE <= 40)
+*	@retval	FAN_DRIVER_ERR_TACH		If there is no tachometer reading for a period of FAN_DRIVER_TIMEOUT_MS
+*	@retval	FAN_DRIVER_ERR_CONFIG	If (FAN_DRIVER_MAX_SPEED_RPM - FAN_DRIVER_MIN_SPEED_RPM) < 80 || !(1 <= MIN_DC_REG_STEP <= 10) || !(0 <= MIN_DC_REG_VALUE <= 40) || !(15 <= HYST_CORR_FACT_X1000 <= 50)
 *
 *	@pre 	FAN_DRIVER_MAX_SPEED_RPM - FAN_DRIVER_MIN_SPEED_RPM >= 80
 *	@pre 	1 <= MIN_DC_REG_STEP <= 10
 *	@pre 	0 <= MIN_DC_REG_VALUE <= 40
+*	@pre 	15 <= HYST_CORR_FACT_X1000 <= 50
 *	@post 	If passed configuration parameters are invalid the speed is left unchanged
 *	@post 	If fan_driver_boot has never been called it is called
 *	@post 	If the tachometer reading times out the speed is not adjusted with the feedback but is still an estimated value

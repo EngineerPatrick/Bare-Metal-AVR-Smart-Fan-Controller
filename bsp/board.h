@@ -2,9 +2,9 @@
 *
 *	@file board.h
 *
-*	@brief UNO R3 board pins map.
+*	@brief Arduino UNO R3 board pins map.
 *
-*	@details MCU-board interface that maps every board pin
+*	@details Interface that maps every board pin
 *   to a bit in an MCU register.
 *
 */

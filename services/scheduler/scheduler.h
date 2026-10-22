@@ -4,8 +4,7 @@
 *
 *	@brief Public API for the scheduler module.
 *
-*	@details Module to implement a scheduler using the ATmega328P
-*	8-bit timer 0.
+*	@details Module to implement a scheduler using the ATmega328P Timer0.
 *
 *	Can be used for both delays creation and event polling.
 *
@@ -18,9 +17,9 @@
 
 /**
 *
-*	@brief	Configures and starts 8-bit timer 0 to 1 ms.
+*	@brief	Configures and starts Timer0 to 1 ms.
 *
-*	@post 	If 8-bit timer 0 has never been configured it is configured to 1 ms
+*	@post 	If Timer0 has never been configured it is configured to 1 ms
 *	@post 	The timer is started
 *	@post 	If the timer was already running it is left unchanged
 *
@@ -53,14 +52,19 @@ uint16_t scheduler_timer_get_timestamp(void);
 *	@brief	Polls the timer to check if it reached the target and updates the starting time.
 *
 *	@param	target_duration_ms	    Target duration of the timer
-*	@param	t_zero_ms			    Starting time
+*	@param	t_zero_ms			    Starting timestamp
 *
-*	@retval	0					    If the timer has not yet reached the target duration or if t_zero_ms == NULL || !target_duration_ms
-*	@retval	0					    If scheduler_timer_start has never been called
+*	@retval	0					    If scheduler_timer_start has never been called or if t_zero_ms == NULL
+*	@retval	0					    If the timer has not yet reached the target duration or if !target_duration_ms
 *	@retval	1					    If the timer has reached the target duration
 *
-*	@pre    This function is being polled at a frequency f > 16 mHz
-*	@post 	If the timer has reached the target duration *t_zero_ms is updated to the current timestamp
+*	@pre    scheduler_timer_start has been called
+*	@pre    t_zero_ms != NULL
+*	@pre    This function is being polled at a frequency higher than 16 mHz
+*	@post 	If scheduler_timer_start has never been called t_zero_ms is left unchanged
+*	@post 	If passed parameter is invalid t_zero_ms is left unchanged
+*	@post 	If this function is being polled at a frequency lower than 16 mHz the correct execution is not guaranteed
+*	@post 	On success if the timer has reached the target duration t_zero_ms is updated to the current timestamp
 *
 */
 uint8_t scheduler_timer_poll(uint16_t* t_zero_ms, uint16_t target_duration_ms);
@@ -72,6 +76,7 @@ uint8_t scheduler_timer_poll(uint16_t* t_zero_ms, uint16_t target_duration_ms);
 *
 *	@param	target_duration_ms		Target duration of the delay
 *
+*	@post 	scheduler_timer_start has been called
 *	@post 	If scheduler_timer_start has never been called the delay will not be created
 *	@post 	On success the CPU idles for target_duration_ms
 *
