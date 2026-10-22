@@ -1,0 +1,53 @@
+/**
+*
+*	@file pin_map.h
+*
+*	@brief System pins map.
+*
+*	@details Board-user interface that maps every used pin
+*   to a board pin.
+*
+*/
+
+#ifndef PIN_MAP_H
+#define PIN_MAP_H
+
+#include "board.h"
+
+#define LED1_OUTPUT DR_D14
+#define LED2_OUTPUT DR_D15
+#define LED3_OUTPUT DR_D16
+#define BUZZER_OUTPUT DR_D17
+
+#define LED1_DIRECTION DDR_D14
+#define LED2_DIRECTION DDR_D15
+#define LED3_DIRECTION DDR_D16
+#define BUZZER_DIRECTION DDR_D17
+
+#define FAN_TACH_INPUT IPR_D8
+
+#define RATE_BUTTON_INPUT IPR_D7
+#define SELECT_BUTTON_INPUT IPR_D6
+#define CONFIRM_BUTTON_INPUT IPR_D5
+#define ROT_ENC_CLK_INPUT IPR_D4
+#define ROT_ENC_DT_INPUT IPR_D2
+
+#define FAN_TACH_PULLUP_R DR_D8
+
+#define RATE_BUTTON_PULLUP_R DR_D7
+#define SELECT_BUTTON_PULLUP_R DR_D6
+#define CONFIRM_BUTTON_PULLUP_R DR_D5
+#define ROT_ENC_CLK_PULLUP_R DR_D4
+#define ROT_ENC_DT_PULLUP_R DR_D2
+
+#define FAN_TACH_DIRECTION DDR_D8
+
+#define RATE_BUTTON_DIRECTION DDR_D7
+#define SELECT_BUTTON_DIRECTION DDR_D6
+#define CONFIRM_BUTTON_DIRECTION DDR_D5
+#define ROT_ENC_CLK_DIRECTION DDR_D4
+#define ROT_ENC_DT_DIRECTION DDR_D2
+
+#define FAN_PWM_DIRECTION DDR_D3
+
+#endif
