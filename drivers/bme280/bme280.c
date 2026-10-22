@@ -133,7 +133,7 @@ bme_errors bme280_temp_read(int16_t* temp_c_x10) {
 	int32_t temp_adc_value = 0;
 	int16_t temp_c_x100 = 0;
 	
-	if (temp_c_x10 == NULL || BME280_MAX_TEMP_C_X10 > 850) {
+	if (temp_c_x10 == NULL) {
 		return BME_ERR_PARAM;
 	}
 	

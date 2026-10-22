@@ -6,11 +6,8 @@
 *
 *	@details Configuration values for all modules of the system.
 *
-*	If parameters are changed outside the valid ranges a specific error
-*	will be reported by the module using them.
-*
-*	Changing these values to non-unsigned-integer types will result in
-*	undefined behaviors and the correct execution is no longer guaranteed
+*	If parameters are changed to incorrect values a specific error
+*	will be generated during compile-time.
 *
 */
 
@@ -58,7 +55,7 @@
 *
 *		Position of every word and digit	 on the display
 *
-*		-Every position must be set so that every character enters within an 8x16 grid
+*		-Every position must be set so that every character fits within an 8x16 grid
 *
 */
 #define FIRST_ROW 3
@@ -144,13 +141,13 @@
 *
 *	 	-Tested duty-cycle range is [3.75%, 100%] (2 to 79 duty_cycle reg)
 *
-*		-The valid range must be bigger than 80
+*		-The valid range must be bigger than 80 with boundaries within [0, 9999]
 *
 *		-Keep this range smaller than the real measured one to guarantee the reaching of the target speed
 *
 */
-#define FAN_DRIVER_MAX_SPEED_RPM 2000
 #define FAN_DRIVER_MIN_SPEED_RPM 350
+#define FAN_DRIVER_MAX_SPEED_RPM 2000
 
 #define FAN_DRIVER_BOOT_DELAY_MS 1000
 #define FAN_DRIVER_TIMEOUT_MS 400
@@ -159,4 +156,245 @@
 /*FAULT_MANAGER*/
 #define BUZZER_DURATION_S 20
 
+#endif
+
+
+/*
+*
+*		Control logic to generate compile-time errors for incorrect values
+*
+*/	
+
+/*TWI*/
+#if (TWI_BITRATE_REG < 0 || TWI_BITRATE_REG > 255)
+
+	#error "The configured value for the bitrate register is out of range"
+	
+#elif (TWI_BITRATE_PRESCALER < 0 || TWI_BITRATE_PRESCALER > 3)
+
+	#error "The configured value for the bitrate prescaler register is out of range"
+	
+#elif TWI_TIMEOUT_MS < 0
+
+	#error "The configured value for the hardware timeout of the TWI is out of range"
+	
+#endif
+
+/*UI*/
+#if (UI_STD_CURVE_SIZE < 0 || UI_STD_CURVE_SIZE > 10)
+
+	#error "The configured size for the standard curve is out of range"
+	
+#elif (UI_STD_TEMP_1 < BME280_MIN_TEMP_C_X10 || UI_STD_TEMP_1 > BME280_MAX_TEMP_C_X10)
+
+	#error "The configured temperature for node 1 of the standard curve is out of range"
+	
+#elif (UI_STD_TEMP_2 < BME280_MIN_TEMP_C_X10 || UI_STD_TEMP_2 > BME280_MAX_TEMP_C_X10)
+
+	#error "The configured temperature for node 2 of the standard curve is out of range"
+	
+#elif (UI_STD_TEMP_3 < BME280_MIN_TEMP_C_X10 || UI_STD_TEMP_3 > BME280_MAX_TEMP_C_X10)
+
+	#error "The configured temperature for node 3 of the standard curve is out of range"
+	
+#elif (UI_STD_TEMP_4 < BME280_MIN_TEMP_C_X10 || UI_STD_TEMP_4 > BME280_MAX_TEMP_C_X10)
+
+	#error "The configured temperature for node 4 of the standard curve is out of range"
+	
+#elif (UI_STD_TEMP_5 < BME280_MIN_TEMP_C_X10 || UI_STD_TEMP_5 > BME280_MAX_TEMP_C_X10)
+
+	#error "The configured temperature for node 5 of the standard curve is out of range"
+	
+#elif (UI_STD_TEMP_6 < BME280_MIN_TEMP_C_X10 || UI_STD_TEMP_6 > BME280_MAX_TEMP_C_X10)
+
+	#error "The configured temperature for node 6 of the standard curve is out of range"
+	
+#elif (UI_STD_TEMP_7 < BME280_MIN_TEMP_C_X10 || UI_STD_TEMP_7 > BME280_MAX_TEMP_C_X10)
+
+	#error "The configured temperature for node 7 of the standard curve is out of range"
+	
+#elif (UI_STD_TEMP_8 < BME280_MIN_TEMP_C_X10 || UI_STD_TEMP_8 > BME280_MAX_TEMP_C_X10)
+
+	#error "The configured temperature for node 8 of the standard curve is out of range"
+	
+#elif (UI_STD_TEMP_9 < BME280_MIN_TEMP_C_X10 || UI_STD_TEMP_9 > BME280_MAX_TEMP_C_X10)
+
+	#error "The configured temperature for node 9 of the standard curve is out of range"
+	
+#elif (UI_STD_TEMP_10 < BME280_MIN_TEMP_C_X10 || UI_STD_TEMP_10 > BME280_MAX_TEMP_C_X10)
+
+	#error "The configured temperature for node 10 of the standard curve is out of range"
+	
+#elif BUTTONS_DEBOUNCE_TIME_MS < 0
+
+	#error "The configured value for the buttons software-debounce is out of range"
+	
+#elif BLINK_TIME_MS < 0
+
+	#error "The configured value for the blinking time is out of range"
+
+#endif
+
+/*DISPLAY*/
+#if (SELECT_WORD_ROW < 1 || SELECT_WORD_ROW > 8)
+
+	#error "The configured row for the SELECT word is out of range"
+	
+#elif (SELECT_WORD_COLUMN < 1 || SELECT_WORD_COLUMN > 11)
+
+	#error "The configured column for the SELECT word is out of range"
+
+#elif (MODE_WORD_ROW < 1 || MODE_WORD_ROW > 8)
+
+	#error "The configured row for the MODE word is out of range"
+	
+#elif (MODE_WORD_COLUMN < 1 || MODE_WORD_COLUMN > 13)
+
+	#error "The configured column for the MODE word is out of range"
+
+#elif (STANDARD_WORD_ROW < 1 || STANDARD_WORD_ROW > 8)
+
+	#error "The configured row for the STANDARD word is out of range"
+	
+#elif (STANDARD_WORD_COLUMN < 1 || STANDARD_WORD_COLUMN > 9)
+
+	#error "The configured column for the STANDARD word is out of range"
+
+#elif (ADVANCED_WORD_ROW < 1 || ADVANCED_WORD_ROW > 8)
+
+	#error "The configured row for the ADVANCED word is out of range"
+	
+#elif (ADVANCED_WORD_COLUMN < 1 || ADVANCED_WORD_COLUMN > 9)
+
+	#error "The configured column for the ADVANCED word is out of range"
+
+#elif (NODE_WORD_ROW < 1 || NODE_WORD_ROW > 8)
+
+	#error "The configured row for the NODE word is out of range"
+	
+#elif (NODE_WORD_COLUMN < 1 || NODE_WORD_COLUMN > 13)
+
+	#error "The configured column for the NODE word is out of range"
+
+#elif (NODE_DIGITS_ROW < 1 || NODE_DIGITS_ROW > 8)
+
+	#error "The configured row for the node digits is out of range"
+	
+#elif (NODE_DIGITS_COLUMN < 1 || NODE_DIGITS_COLUMN > 15)
+
+	#error "The configured column for the node digits is out of range"
+
+#elif (TEMP_WORD_ROW < 1 || TEMP_WORD_ROW > 8)
+
+	#error "The configured row for the TEMP word is out of range"
+	
+#elif (TEMP_WORD_COLUMN < 1 || TEMP_WORD_COLUMN > 3)
+
+	#error "The configured column for the TEMP word is out of range"
+
+#elif (TEMP_DIGITS_ROW < 1 || TEMP_DIGITS_ROW > 8)
+
+	#error "The configured row for the temperature digits is out of range"
+	
+#elif (TEMP_DIGITS_COLUMN < 1 || TEMP_DIGITS_COLUMN > 11)
+
+	#error "The configured column for the temperature digits is out of range"
+
+#elif (SPEED_WORD_ROW < 1 || SPEED_WORD_ROW > 8)
+
+	#error "The configured row for the SPEED word is out of range"
+	
+#elif (SPEED_WORD_COLUMN < 1 || SPEED_WORD_COLUMN > 3)
+
+	#error "The configured column for the SPEED word is out of range"
+
+#elif (SPEED_DIGITS_ROW < 1 || SPEED_DIGITS_ROW > 8)
+
+	#error "The configured row for the speed digits is out of range"
+	
+#elif (SPEED_DIGITS_COLUMN < 1 || SPEED_DIGITS_COLUMN > 10)
+
+	#error "The configured column for the speed digits is out of range"
+
+#elif (ERR_WORD_ROW < 1 || ERR_WORD_ROW > 8)
+
+	#error "The configured row for the ERR word is out of range"
+	
+#elif (ERR_WORD_COLUMN < 1 || ERR_WORD_COLUMN > 14)
+
+	#error "The configured column for the ERR word is out of range"
+
+#elif (ERR_DIGITS_ROW < 1 || ERR_DIGITS_ROW > 8)
+
+	#error "The configured row for the error digits is out of range"
+	
+#elif (ERR_DIGITS_COLUMN < 1 || ERR_DIGITS_COLUMN > 16)
+
+	#error "The configured column for the error digits is out of range"
+
+#endif
+
+/*BME280*/
+#if (BME280_MIN_TEMP_C_X10 < 0 || BME280_MIN_TEMP_C_X10 > 850)
+
+	#error "The configured minimum value for the temperature is out of range"
+	
+#elif (BME280_MAX_TEMP_C_X10 < 0 || BME280_MAX_TEMP_C_X10 > 850)
+
+	#error "The configured maximum value for the temperature is out of range"
+	
+#elif BME280_MIN_TEMP_C_X10 > BME280_MAX_TEMP_C_X10
+
+	#error "The configured minimum value for the temperature is higher than the configured maximum value"
+
+#endif
+
+/*FAN_DRIVER*/
+#if (MIN_DC_REG_STEP < 1 || MIN_DC_REG_STEP > 10)
+
+	#error "The configured size of the change of the duty-cycle register for the smallest duty-cycle variation is out of range"
+
+#elif (HYST_CORR_FACT_X1000 < 15 || HYST_CORR_FACT_X1000 > 50)
+
+	#error "The configured value of the hysteresis correction factor is out of range"
+
+#elif (MIN_DC_REG_VALUE < 0 || MIN_DC_REG_VALUE > 40)
+
+	#error "The configured minimum value of the duty-cycle register is out of range"
+	
+#elif (FAN_DRIVER_MIN_SPEED_RPM < 0 || FAN_DRIVER_MIN_SPEED_RPM > 9919)
+
+	#error "The configured minimum value of the speed is out of range"
+	
+#elif (FAN_DRIVER_MAX_SPEED_RPM < 80 || FAN_DRIVER_MAX_SPEED_RPM > 9999)
+
+	#error "The configured maximum value of the speed is out of range"
+	
+#elif FAN_DRIVER_MIN_SPEED_RPM > FAN_DRIVER_MAX_SPEED_RPM
+
+	#error "The configured minimum value for the speed is higher than the configured maximum value"
+	
+#elif (FAN_DRIVER_MAX_SPEED_RPM - FAN_DRIVER_MIN_SPEED_RPM) < 80
+
+	#error "The configured speed range is smaller than 80"
+	
+#elif FAN_DRIVER_BOOT_DELAY_MS < 0
+
+	#error "The configured value for the fan boot delay is out of range"
+	
+#elif FAN_DRIVER_TIMEOUT_MS < 0
+
+	#error "The configured value for the hardware timeout of the fan tachometer is out of range"
+	
+#elif FAN_DRIVER_UPDATE_TIME_MS < 0
+
+	#error "The configured value for the PWM target update is out of range"
+	
+#endif
+
+/*FAULT_MANAGER*/
+#if BUZZER_DURATION_S < 0
+
+	#error "The configured duration for the buzzer sound is out of range"
+	
 #endif

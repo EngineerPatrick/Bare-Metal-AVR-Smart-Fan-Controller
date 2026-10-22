@@ -713,7 +713,7 @@ typedef struct {
 	uint8_t init_flag;
 } display_blink;
 
-static display_blink blink = {0, 0, 0, 0, 0, 0};
+static display_blink blink = {0};
 
 static display_errors display_word_blink_switch(blink_options option, uint8_t state) {
 	display_errors error_code = 0;
